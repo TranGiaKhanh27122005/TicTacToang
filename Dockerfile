@@ -3,15 +3,8 @@
 FROM mcr.microsoft.com/dotnet/sdk:9.0 AS build
 WORKDIR /src
 
-COPY TicTacToang.sln ./
-COPY src/TicTacToang.Domain/TicTacToang.Domain.csproj src/TicTacToang.Domain/
-COPY src/TicTacToang.Application/TicTacToang.Application.csproj src/TicTacToang.Application/
-COPY src/TicTacToang.Infrastructure/TicTacToang.Infrastructure.csproj src/TicTacToang.Infrastructure/
-COPY src/TicTacToang.Web/TicTacToang.Web.csproj src/TicTacToang.Web/
-COPY tests/TicTacToang.Domain.Specs/TicTacToang.Domain.Specs.csproj tests/TicTacToang.Domain.Specs/
-RUN dotnet restore TicTacToang.sln
-
 COPY . .
+RUN dotnet restore TicTacToang.sln
 RUN dotnet publish src/TicTacToang.Web/TicTacToang.Web.csproj -c Release -o /app/publish --no-restore
 
 FROM mcr.microsoft.com/dotnet/aspnet:9.0 AS runtime
