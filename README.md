@@ -43,3 +43,5 @@ dotnet run --project tests\TicTacToang.Domain.Specs
 ## Documentation
 
 See [USER_GUIDE.md](USER_GUIDE.md) for full run, stop, testing, admin, and database instructions.
+
+See [DEPLOYMENT.md](DEPLOYMENT.md) for Docker and hosting instructions.

@@ -1,0 +1,13 @@
+**/bin/
+**/obj/
+.git/
+.vs/
+Data/
+*.db
+*.db-shm
+*.db-wal
+*.log
+*.user
+CAPSTONE_NOTES.local.md
+TicTacToang.NET_Submission/
+TicTacToang.NET_Submission.zip
