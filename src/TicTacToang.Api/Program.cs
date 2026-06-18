@@ -147,6 +147,8 @@ social.MapPost("/room-invites", async (RoomInviteInput request, SocialService se
 var admin = app.MapGroup("/api/admin").RequireAuthorization("AdminOnly");
 admin.MapGet("/users", (PlayerService service) => service.GetAll());
 admin.MapGet("/dashboard", (AdminDashboardService service) => service.GetStats());
+admin.MapGet("/suspicious-matches", (AdminDashboardService service) => service.GetSuspiciousMatches());
+admin.MapGet("/ai-analytics", (AdminDashboardService service) => service.GetAiAnalytics());
 admin.MapGet("/users/search", (string? search, string? role, string? status, string? premium, PlayerService service) =>
     service.Search(new AdminUserQuery(search, role, status, premium)));
 admin.MapPatch("/users/{id:guid}", async (Guid id, AdminPlayerInput request, PlayerService service) =>

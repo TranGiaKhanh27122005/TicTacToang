@@ -10,6 +10,7 @@ TicTacToang.NET is a .NET/C# web game platform for five-in-a-row matches with pl
 - SignalR
 - Clean Architecture style project layout
 - Domain-focused game rules and tests
+- Suspicious match detection and AI performance analytics
 
 ## Run
 

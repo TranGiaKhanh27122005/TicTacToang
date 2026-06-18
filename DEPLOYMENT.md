@@ -117,3 +117,4 @@ Demo@1234
 - Do not commit `Data/tictactoang.db`; it is local runtime data.
 - Demo data is seeded automatically when the database is empty.
 - Render deployment uses PostgreSQL to satisfy production-style database requirements.
+- The admin console includes suspicious match detection and AI analytics for a more distinctive management workflow.

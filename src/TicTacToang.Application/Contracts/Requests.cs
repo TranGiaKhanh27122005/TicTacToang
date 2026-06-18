@@ -34,6 +34,34 @@ public sealed record AdminDashboardStats(
     int TenByTenMatches,
     int FifteenByFifteenMatches);
 
+public sealed record SuspiciousMatchReport(
+    string MatchId,
+    string Mode,
+    string Status,
+    string PlayerX,
+    string PlayerO,
+    int MoveCount,
+    double AverageSecondsPerMove,
+    int Severity,
+    IReadOnlyList<string> Reasons);
+
+public sealed record AiDifficultyAnalytics(
+    string Difficulty,
+    int Matches,
+    int PlayerWins,
+    int AiWins,
+    int Draws,
+    double PlayerWinRate,
+    double AverageMoves);
+
+public sealed record AiAnalyticsSummary(
+    int TotalAiMatches,
+    int PlayerWins,
+    int AiWins,
+    int Draws,
+    double PlayerWinRate,
+    IReadOnlyList<AiDifficultyAnalytics> ByDifficulty);
+
 public sealed record PlayerView(
     Guid Id,
     string Name,

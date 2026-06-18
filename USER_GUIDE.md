@@ -124,6 +124,8 @@ The admin console supports:
 - Banning and unbanning users
 - Reviewing recent matches
 - Aborting active or waiting matches
+- Suspicious match detection
+- AI difficulty analytics and player win-rate tracking
 
 The database includes demo users, rooms, matches, friendships, friend requests, and room invites so the admin dashboard does not appear empty during testing.
 

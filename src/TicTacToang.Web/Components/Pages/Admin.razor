@@ -29,6 +29,78 @@ else
         <article><span>Moves Played</span><strong>@_stats.MovesPlayed</strong></article>
     </section>
 
+    <section class="admin-insight-grid">
+        <section class="table-panel admin-suspicious-panel">
+            <header class="admin-panel-header">
+                <div>
+                    <h2>Suspicious Match Detection</h2>
+                    <p>@_suspiciousMatches.Count flagged match(es)</p>
+                </div>
+            </header>
+
+            <div class="admin-suspicious-list">
+                @if (_suspiciousMatches.Count == 0)
+                {
+                    <p class="admin-empty-note">No suspicious matches detected.</p>
+                }
+                else
+                {
+                    @foreach (var report in _suspiciousMatches.Take(5))
+                    {
+                        <article>
+                            <span class="admin-risk-score">Risk @report.Severity</span>
+                            <span>
+                                <strong>@report.PlayerX vs @report.PlayerO</strong>
+                                <small>@report.Status | @report.MoveCount moves | avg @report.AverageSecondsPerMove sec</small>
+                            </span>
+                            <ul>
+                                @foreach (var reason in report.Reasons)
+                                {
+                                    <li>@reason</li>
+                                }
+                            </ul>
+                        </article>
+                    }
+                }
+            </div>
+        </section>
+
+        <section class="table-panel admin-ai-panel">
+            <header class="admin-panel-header">
+                <div>
+                    <h2>AI Analytics</h2>
+                    <p>@_aiAnalytics.TotalAiMatches AI match(es) | player win rate @_aiAnalytics.PlayerWinRate%</p>
+                </div>
+            </header>
+
+            <div class="admin-ai-summary">
+                <p><span>Player wins</span><strong>@_aiAnalytics.PlayerWins</strong></p>
+                <p><span>AI wins</span><strong>@_aiAnalytics.AiWins</strong></p>
+                <p><span>Draws</span><strong>@_aiAnalytics.Draws</strong></p>
+            </div>
+
+            <div class="admin-ai-list">
+                @if (_aiAnalytics.ByDifficulty.Count == 0)
+                {
+                    <p class="admin-empty-note">No AI matches available yet.</p>
+                }
+                else
+                {
+                    @foreach (var item in _aiAnalytics.ByDifficulty)
+                    {
+                        <article>
+                            <span>
+                                <strong>@item.Difficulty</strong>
+                                <small>@item.Matches matches | avg @item.AverageMoves moves</small>
+                            </span>
+                            <span class="admin-badge premium">@item.PlayerWinRate% player win</span>
+                        </article>
+                    }
+                }
+            </div>
+        </section>
+    </section>
+
     <div class="admin-management-grid">
         <section class="table-panel admin-users-panel">
             <header class="admin-panel-header">
@@ -127,6 +199,8 @@ else
 
 @code {
     private AdminDashboardStats _stats = new(0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0);
+    private IReadOnlyList<SuspiciousMatchReport> _suspiciousMatches = [];
+    private AiAnalyticsSummary _aiAnalytics = new(0, 0, 0, 0, 0, []);
     private string _search = "";
     private string _role = "all";
     private string _status = "all";
@@ -177,7 +251,12 @@ else
         _page = 1;
     }
 
-    private void RefreshStats() => _stats = Dashboard.GetStats();
+    private void RefreshStats()
+    {
+        _stats = Dashboard.GetStats();
+        _suspiciousMatches = Dashboard.GetSuspiciousMatches();
+        _aiAnalytics = Dashboard.GetAiAnalytics();
+    }
     private void PreviousPage() => _page = Math.Max(1, CurrentPage - 1);
     private void NextPage() => _page = Math.Min(TotalPages, CurrentPage + 1);
 
