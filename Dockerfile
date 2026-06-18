@@ -11,6 +11,7 @@ FROM mcr.microsoft.com/dotnet/aspnet:9.0 AS runtime
 WORKDIR /app
 
 ENV ASPNETCORE_ENVIRONMENT=Production
+ENV Database__Provider=Sqlite
 ENV ConnectionStrings__DefaultConnection="Data Source=/app/Data/tictactoang.db"
 
 COPY --from=build /app/publish .

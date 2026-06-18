@@ -75,7 +75,8 @@
 
 .admin-user-list,
 .admin-match-list,
-.admin-summary-list {
+.admin-summary-list,
+.admin-pagination {
     display: grid;
     gap: .65rem;
 }
@@ -176,6 +177,17 @@
     min-height: 38px;
     border-radius: 10px;
     padding: .45rem .75rem;
+}
+
+.admin-pagination {
+    grid-template-columns: auto 1fr auto;
+    align-items: center;
+}
+
+.admin-pagination span {
+    color: var(--muted);
+    text-align: center;
+    font-weight: 750;
 }
 
 @media (max-width: 1180px) {

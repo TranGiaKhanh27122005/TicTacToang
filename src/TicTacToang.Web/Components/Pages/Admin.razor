@@ -34,7 +34,7 @@ else
             <header class="admin-panel-header">
                 <div>
                     <h2>User Management</h2>
-                    <p>@FilteredPlayers.Count account(s) found</p>
+                    <p>@FilteredPlayers.Count account(s) found | page @CurrentPage of @TotalPages</p>
                 </div>
                 <button type="button" @onclick="ResetFilters">Reset</button>
             </header>
@@ -72,7 +72,7 @@ else
             </div>
 
             <div class="admin-user-list">
-                @foreach (var player in FilteredPlayers)
+                @foreach (var player in PagedPlayers)
                 {
                     <article class="admin-user-row">
                         <span class="admin-user-avatar"><img src="@AvatarPath(player.Avatar)" alt="@player.Name avatar" /></span>
@@ -89,6 +89,12 @@ else
                     </article>
                 }
             </div>
+
+            <footer class="admin-pagination">
+                <button type="button" disabled="@(CurrentPage <= 1)" @onclick="PreviousPage">Previous</button>
+                <span>Showing @PageStart - @PageEnd of @FilteredPlayers.Count</span>
+                <button type="button" disabled="@(CurrentPage >= TotalPages)" @onclick="NextPage">Next</button>
+            </footer>
         </section>
 
         <section class="table-panel admin-summary-panel">
@@ -125,9 +131,19 @@ else
     private string _role = "all";
     private string _status = "all";
     private string _premium = "all";
+    private int _page = 1;
+    private const int PageSize = 6;
 
     private IReadOnlyList<PlayerView> FilteredPlayers =>
         Players.Search(new AdminUserQuery(_search, _role, _status, _premium));
+    private int TotalPages => Math.Max(1, (int)Math.Ceiling(FilteredPlayers.Count / (double)PageSize));
+    private int CurrentPage => Math.Min(_page, TotalPages);
+    private int PageStart => FilteredPlayers.Count == 0 ? 0 : ((CurrentPage - 1) * PageSize) + 1;
+    private int PageEnd => Math.Min(CurrentPage * PageSize, FilteredPlayers.Count);
+    private IReadOnlyList<PlayerView> PagedPlayers => FilteredPlayers
+        .Skip((CurrentPage - 1) * PageSize)
+        .Take(PageSize)
+        .ToList();
 
     protected override void OnInitialized()
     {
@@ -158,9 +174,12 @@ else
         _role = "all";
         _status = "all";
         _premium = "all";
+        _page = 1;
     }
 
     private void RefreshStats() => _stats = Dashboard.GetStats();
+    private void PreviousPage() => _page = Math.Max(1, CurrentPage - 1);
+    private void NextPage() => _page = Math.Min(TotalPages, CurrentPage + 1);
 
     private static string AvatarPath(string avatar) =>
         string.IsNullOrWhiteSpace(avatar) ? "/Mambo.png" : avatar.StartsWith('/') ? avatar : $"/{avatar}";

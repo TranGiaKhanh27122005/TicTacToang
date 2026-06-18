@@ -129,12 +129,19 @@ The database includes demo users, rooms, matches, friendships, friend requests, 
 
 ## Database
 
-The application uses SQLite through Entity Framework Core.
+The application uses Entity Framework Core.
 
-The database file is created automatically when the app starts:
+For local development, it uses SQLite by default. The local database file is created automatically when the app starts:
 
 ```text
 Data\tictactoang.db
+```
+
+For cloud deployment, the project supports PostgreSQL by setting:
+
+```text
+Database__Provider=Postgres
+ConnectionStrings__DefaultConnection=<PostgreSQL connection string>
 ```
 
 The main database tables are:
@@ -174,6 +181,26 @@ Default connection string:
 ```
 
 To use a different SQLite file, change the `Data Source` value.
+
+To use PostgreSQL, set `Database:Provider` to `Postgres` and provide a PostgreSQL connection string. Render uses this automatically from `render.yaml`.
+
+## API Authentication
+
+The REST API supports JWT authentication.
+
+Login endpoint:
+
+```text
+POST /api/auth/login
+```
+
+The response includes a `token`. Send it to protected endpoints with:
+
+```text
+Authorization: Bearer <token>
+```
+
+Admin API endpoints require an admin JWT.
 
 ## EF Core Migrations
 

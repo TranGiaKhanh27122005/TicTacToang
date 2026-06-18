@@ -1,6 +1,6 @@
 # Deployment Guide
 
-This project can be deployed as a Docker web service. Docker is the recommended path because the app uses Blazor Server and SQLite, and the container keeps runtime settings predictable.
+This project can be deployed as a Docker web service. Docker is the recommended path because the app uses Blazor Server and needs predictable runtime settings.
 
 ## Recommended Host
 
@@ -14,7 +14,7 @@ Render web services provide a `PORT` environment variable. The Dockerfile binds 
 | --- | --- |
 | `Dockerfile` | Builds and runs the Blazor web app |
 | `.dockerignore` | Keeps build output, local database files, logs, and local notes out of the image |
-| `render.yaml` | Render blueprint for a Docker web service |
+| `render.yaml` | Render blueprint for a Docker web service and PostgreSQL database |
 | `USER_GUIDE.md` | User/admin operating instructions |
 
 ## Local Docker Test
@@ -47,30 +47,45 @@ Stop the container with `Ctrl + C`.
 7. Wait for the Docker build and deployment to finish.
 8. Open the generated Render URL.
 
-The included `render.yaml` mounts a disk at:
+The included `render.yaml` provisions a Render PostgreSQL database named:
 
 ```text
-/app/Data
+tictactoang-db
 ```
 
-That is where SQLite stores:
+The service receives its PostgreSQL connection string through:
 
 ```text
-tictactoang.db
+ConnectionStrings__DefaultConnection
 ```
 
-If your hosting plan does not support persistent disks, the app will still run, but the SQLite database can reset when the container is rebuilt or restarted.
+The deployed service also sets:
+
+```text
+Database__Provider=Postgres
+```
 
 ## Environment Variables
 
-These values are already set in the Dockerfile/render blueprint:
+These values are set in the Dockerfile for local container testing:
 
 ```text
 ASPNETCORE_ENVIRONMENT=Production
+Database__Provider=Sqlite
 ConnectionStrings__DefaultConnection=Data Source=/app/Data/tictactoang.db
 ```
 
-For another host, set the same connection string environment variable if you want SQLite stored in a specific mounted folder.
+For Render cloud deployment, `render.yaml` overrides the database provider to `Postgres`, injects the PostgreSQL connection string, and generates a JWT signing key.
+
+For another host using PostgreSQL, set:
+
+```text
+Database__Provider=Postgres
+ConnectionStrings__DefaultConnection=<your PostgreSQL connection string>
+Jwt__Key=<a long random secret>
+Jwt__Issuer=TicTacToang
+Jwt__Audience=TicTacToang.Client
+```
 
 ## Deploy To Another Docker Host
 
@@ -101,4 +116,4 @@ Demo@1234
 
 - Do not commit `Data/tictactoang.db`; it is local runtime data.
 - Demo data is seeded automatically when the database is empty.
-- For production with multiple app instances, replace SQLite with a hosted database such as PostgreSQL or SQL Server.
+- Render deployment uses PostgreSQL to satisfy production-style database requirements.
