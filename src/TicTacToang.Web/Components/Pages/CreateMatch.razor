@@ -1,0 +1,146 @@
+@page "/create-match"
+@inject RoomService Rooms
+@inject UserSession Session
+@inject NavigationManager Navigation
+
+<div class="create-match-page">
+    <a class="return-button create-match-back" href="/main-menu">Back to Main Menu</a>
+
+    <EditForm Model="this" OnValidSubmit="CreateRoomAsync" class="create-match-card">
+        <h1>Create Your Game Room</h1>
+
+        <label class="setup-label">
+            Room Name
+            <InputText class="setup-input" @bind-Value="_roomName" />
+        </label>
+
+        <section class="setup-section">
+            <h2>Number of Players</h2>
+            <div class="setup-grid two">
+                @foreach (var count in PlayerCounts)
+                {
+                    <button type="button" class="@OptionClass(_players == count)" @onclick="() => SetPlayers(count)">@count Players</button>
+                }
+            </div>
+        </section>
+
+        <section class="setup-section">
+            <h2>Host Position (You Go On This Turn)</h2>
+            <div class="setup-grid two">
+                @for (var position = 1; position <= _players; position++)
+                {
+                    var current = position;
+                    <button type="button" class="@OptionClass(_hostPosition == current)" @onclick="() => _hostPosition = current">@Ordinal(current)</button>
+                }
+            </div>
+        </section>
+
+        <section class="setup-section">
+            <h2>Board Style</h2>
+            <div class="setup-grid three">
+                @foreach (var style in BoardStyles)
+                {
+                    <button type="button" class="@OptionClass(_boardStyle == style)" @onclick="() => _boardStyle = style">@style</button>
+                }
+            </div>
+        </section>
+
+        <section class="setup-section">
+            <h2>Board Size</h2>
+            <div class="setup-grid two">
+                @foreach (var size in BoardSizes)
+                {
+                    <button type="button" class="@OptionClass(_boardSize == size)" @onclick="() => _boardSize = size">@size x @size</button>
+                }
+            </div>
+        </section>
+
+        <section class="setup-section">
+            <h2>Game Marker</h2>
+            <div class="marker-grid">
+                @foreach (var marker in Markers)
+                {
+                    <button type="button" class="@OptionClass(_marker == marker)" @onclick="() => _marker = marker">@marker</button>
+                }
+            </div>
+        </section>
+
+        <section class="setup-section">
+            <div class="timer-heading">
+                <h2>Maximum Timer Per Player (Chess-Clock)</h2>
+                <strong>@FormatTime(_timeSeconds)</strong>
+            </div>
+            <input class="timer-range" type="range" min="240" max="720" step="120" @bind="_timeSeconds" @bind:event="oninput" />
+            <div class="timer-buttons">
+                @foreach (var time in TimerOptions)
+                {
+                    <button type="button" class="@OptionClass(_timeSeconds == time)" @onclick="() => _timeSeconds = time">@FormatTime(time)</button>
+                }
+            </div>
+        </section>
+
+        @if (_error is not null)
+        {
+            <p class="alert-error">@_error</p>
+        }
+
+        <button type="submit" class="create-room-submit">Create Room</button>
+    </EditForm>
+</div>
+
+@code {
+    private static readonly int[] PlayerCounts = [2, 3];
+    private static readonly string[] BoardStyles = ["Classic", "Modern", "Minimal"];
+    private static readonly int[] BoardSizes = [10, 15];
+    private static readonly string[] Markers = ["X", "O", "•", "★", "▲", "♥"];
+    private static readonly int[] TimerOptions = [240, 360, 480, 600, 720];
+
+    private string _roomName = "Game Room";
+    private int _players = 2;
+    private int _hostPosition = 1;
+    private string _boardStyle = "Classic";
+    private int _boardSize = 10;
+    private string _marker = "X";
+    private int _timeSeconds = 240;
+    private string? _error;
+
+    protected override void OnInitialized()
+    {
+        if (!Session.IsAuthenticated)
+        {
+            Navigation.NavigateTo("/login");
+            return;
+        }
+
+        _roomName = $"{Session.Player!.Name}'s Room";
+    }
+
+    private void SetPlayers(int players)
+    {
+        _players = players;
+        if (_hostPosition > players)
+        {
+            _hostPosition = players;
+        }
+    }
+
+    private async Task CreateRoomAsync()
+    {
+        try
+        {
+            var name = string.IsNullOrWhiteSpace(_roomName) ? "Game Room" : _roomName.Trim();
+            var room = await Rooms.CreateAsync(
+                Session.Player!.Id,
+                new CreateRoomRequest(name, _players, _boardSize, _boardStyle, _timeSeconds, _marker, _hostPosition));
+            Navigation.NavigateTo($"/gameroom/{room.Id}");
+        }
+        catch (Exception ex)
+        {
+            _error = ex.Message;
+        }
+    }
+
+    private static string OptionClass(bool active) => active ? "setup-option active" : "setup-option";
+    private static string FormatTime(int seconds) => $"{seconds / 60}:00";
+    private static string Ordinal(int value) => value switch { 1 => "1st", 2 => "2nd", 3 => "3rd", _ => $"{value}th" };
+}

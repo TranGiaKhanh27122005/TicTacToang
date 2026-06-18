@@ -1,0 +1,171 @@
+@page "/rooms"
+@inject RoomService RoomsService
+@inject UserSession Session
+@inject NavigationManager Navigation
+
+<header class="page-title">
+    <div><p class="eyebrow">LOBBY</p><h1>Game Rooms</h1></div>
+    <div class="room-page-actions">
+        <a class="@($"button {(_mode == "join" ? "" : "primary")}")" href="/create-match">Create Room</a>
+        <button class="@(_mode == "join" ? "primary" : "")" @onclick="ShowJoinMode">Join Room</button>
+    </div>
+</header>
+@if (!Session.IsAuthenticated) { <p class="alert-error">Sign in to create or join rooms.</p> }
+<div class="room-layout">
+    <section class="room-list">
+        <h2>Available Rooms</h2>
+        @if (_mode == "join")
+        {
+            <div class="join-room-card">
+                <label>Room code
+                    <input @bind="_roomCode" placeholder="Enter room code" inputmode="numeric" />
+                </label>
+                <button class="primary" @onclick="JoinByCodeAsync">Join by code</button>
+            </div>
+        }
+        @foreach (var room in RoomsService.List())
+        {
+            <button class="room-item @(_room?.Id == room.Id ? "selected" : "")" @onclick="() => Select(room)">
+                <strong>@room.Name</strong><span>#@room.RoomCode | @room.Members.Count/@room.Capacity | @room.Status</span>
+            </button>
+        }
+    </section>
+    @if (_room is not null)
+    {
+        <section class="lobby">
+            <header>
+                <h2>@_room.Name</h2>
+                <div class="room-header-actions">
+                    <span class="badge">@_room.Settings.BoardSize x @_room.Settings.BoardSize</span>
+                    @if (_room.HostId == Session.Player?.Id)
+                    {
+                        <button class="danger" @onclick="DeleteRoomAsync">Delete Room</button>
+                    }
+                </div>
+            </header>
+            <div class="member-grid">
+                @foreach (var member in _room.Members) { <div class="member"><span>@member.Marker</span>@member.Name</div> }
+                @for (var index = _room.Members.Count; index < _room.Capacity; index++) { <div class="member empty">Open slot</div> }
+            </div>
+            <div class="actions">
+                <button @onclick="JoinAsync">Join</button>
+                @if (_room.HostId == Session.Player?.Id) { <button @onclick="AddAiAsync">Add AI</button><button class="primary" @onclick="StartAsync">Start</button> }
+            </div>
+            <div class="chat">
+                @foreach (var message in _room.ChatMessages.TakeLast(8)) { <p><strong>@message.SenderName:</strong> @message.Text</p> }
+            </div>
+            <div class="message-entry"><input @bind="_message" placeholder="Message" /><button @onclick="SendAsync">Send</button></div>
+        </section>
+    }
+</div>
+@if (_error is not null) { <p class="alert-error">@_error</p> }
+
+@code {
+    private GameRoom? _room;
+    private string _message = "";
+    private string _mode = "browse";
+    private string _roomCode = "";
+    private string? _error;
+    [SupplyParameterFromQuery(Name = "mode")] private string? Mode { get; set; }
+    [SupplyParameterFromQuery(Name = "roomId")] private Guid? RoomId { get; set; }
+
+    protected override void OnInitialized()
+    {
+        if (!Session.IsAuthenticated) Navigation.NavigateTo("/login");
+        _mode = string.Equals(Mode, "join", StringComparison.OrdinalIgnoreCase) ? "join" : "browse";
+        _room = RoomId.HasValue
+            ? RoomsService.List().FirstOrDefault(room => room.Id == RoomId.Value) ?? RoomsService.List().FirstOrDefault()
+            : RoomsService.List().FirstOrDefault();
+    }
+
+    private void Select(GameRoom room) => _room = room;
+
+    private async Task CreateAsync()
+    {
+        try
+        {
+            _mode = "browse";
+            _room = await RoomsService.CreateAsync(Session.Player!.Id, new CreateRoomRequest($"{Session.Player.Name}'s Room", 2, 15, "Classic", 60));
+            _error = null;
+        }
+        catch (Exception ex) { _error = ex.Message; }
+    }
+
+    private void ShowJoinMode()
+    {
+        _mode = "join";
+        _error = null;
+    }
+
+    private async Task JoinByCodeAsync()
+    {
+        try
+        {
+            var normalizedCode = _roomCode.Trim();
+            if (!int.TryParse(normalizedCode, out var roomCode))
+            {
+                _error = "Enter a valid numeric room code.";
+                return;
+            }
+
+            var targetRoom = RoomsService.List().FirstOrDefault(room => room.RoomCode == roomCode);
+            if (targetRoom is null)
+            {
+                _error = "Room code not found.";
+                return;
+            }
+
+            _room = targetRoom;
+            await JoinAsync();
+        }
+        catch (Exception ex) { _error = ex.Message; }
+    }
+
+    private async Task JoinAsync()
+    {
+        try
+        {
+            if (_room is null)
+            {
+                _error = "Select a room first.";
+                return;
+            }
+
+            _room = await RoomsService.JoinAsync(_room.Id, Session.Player!.Id);
+            _error = null;
+            Navigation.NavigateTo($"/gameroom/{_room.Id}");
+        }
+        catch (Exception ex) { _error = ex.Message; }
+    }
+    private async Task AddAiAsync()
+    {
+        try { _room = await RoomsService.AddAiAsync(_room!.Id, Session.Player!.Id, AiDifficulty.Medium); }
+        catch (Exception ex) { _error = ex.Message; }
+    }
+    private async Task SendAsync()
+    {
+        if (string.IsNullOrWhiteSpace(_message)) return;
+        await RoomsService.PostChatAsync(_room!.Id, Session.Player!.Id, _message);
+        _message = "";
+    }
+    private async Task StartAsync()
+    {
+        try
+        {
+            var match = await RoomsService.StartAsync(_room!.Id, Session.Player!.Id);
+            Navigation.NavigateTo($"/game/{match.Id}");
+        }
+        catch (Exception ex) { _error = ex.Message; }
+    }
+
+    private async Task DeleteRoomAsync()
+    {
+        try
+        {
+            await RoomsService.DeleteAsync(_room!.Id, Session.Player!.Id);
+            _room = RoomsService.List().FirstOrDefault();
+            _error = null;
+        }
+        catch (Exception ex) { _error = ex.Message; }
+    }
+}

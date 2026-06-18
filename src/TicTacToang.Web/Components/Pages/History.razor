@@ -1,0 +1,33 @@
+@page "/match-history"
+@inject MatchService Matches
+@inject UserSession Session
+@inject NavigationManager Navigation
+
+<a class="return-button" href="/main-menu">Back to Menu</a>
+<header class="page-title"><div><p class="eyebrow">RECORDS</p><h1>Match History</h1></div></header>
+@if (Session.Player is not null)
+{
+    <section class="table-panel">
+        <table>
+            <thead><tr><th>Match</th><th>Mode</th><th>Opponent</th><th>Result</th><th>Moves</th><th></th></tr></thead>
+            <tbody>
+            @foreach (var match in Matches.History(Session.Player.Id))
+            {
+                <tr>
+                    <td>@match.Id[..Math.Min(14, match.Id.Length)]</td><td>@match.Mode</td>
+                    <td>@(match.PlayerX.PlayerId == Session.Player.Id ? match.PlayerO.Name : match.PlayerX.Name)</td>
+                    <td>@Result(match)</td><td>@match.Moves.Count</td>
+                    <td><a href="@($"/replay/{match.Id}")">Replay</a></td>
+                </tr>
+            }
+            </tbody>
+        </table>
+    </section>
+}
+
+@code {
+    protected override void OnInitialized() { if (!Session.IsAuthenticated) Navigation.NavigateTo("/login"); }
+    private string Result(Match match) => match.Result.IsDraw ? "Draw" :
+        (match.PlayerX.PlayerId == Session.Player!.Id && match.Result.Winner == Marker.X) ||
+        (match.PlayerO.PlayerId == Session.Player.Id && match.Result.Winner == Marker.O) ? "Win" : "Loss";
+}

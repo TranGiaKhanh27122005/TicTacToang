@@ -1,0 +1,15 @@
+<Project Sdk="Microsoft.NET.Sdk.Web">
+
+  <ItemGroup>
+    <ProjectReference Include="..\TicTacToang.Domain\TicTacToang.Domain.csproj" />
+    <ProjectReference Include="..\TicTacToang.Application\TicTacToang.Application.csproj" />
+    <ProjectReference Include="..\TicTacToang.Infrastructure\TicTacToang.Infrastructure.csproj" />
+  </ItemGroup>
+
+  <PropertyGroup>
+    <TargetFramework>net9.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+  </PropertyGroup>
+
+</Project>

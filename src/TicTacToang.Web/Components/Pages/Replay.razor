@@ -1,0 +1,38 @@
+@page "/replay/{Id}"
+@inject MatchService Matches
+@inject UserSession Session
+@inject NavigationManager Navigation
+
+@if (Session.Player is not null && !Session.Player.IsPremium)
+{
+    <a class="return-button" href="/match-history">Back to History</a>
+    <section class="empty-state"><h1>Premium Replay</h1><p>Match replay is available to premium players.</p><a class="button primary" href="/subscription">View Premium</a></section>
+}
+else if (_match is not null)
+{
+    <a class="return-button" href="/match-history">Back to History</a>
+    <header class="page-title"><div><p class="eyebrow">REPLAY</p><h1>@_match.PlayerX.Name vs @_match.PlayerO.Name</h1></div></header>
+    <div class="replay-controls"><button @onclick="Previous">Previous</button><strong>Move @_position / @_match.Moves.Count</strong><button @onclick="Next">Next</button></div>
+    <div class="@($"board replay-board board-{_match.BoardSize}")">
+        @for (var row = 0; row < _match.BoardSize; row++)
+        {
+            @for (var col = 0; col < _match.BoardSize; col++)
+            {
+                <div class="cell"><span class="@(_board![row, col])">@_board[row, col]</span></div>
+            }
+        }
+    </div>
+}
+
+@code {
+    [Parameter] public string Id { get; set; } = "";
+    private Match? _match; private string?[,]? _board; private int _position;
+    protected override void OnParametersSet()
+    {
+        if (!Session.IsAuthenticated) { Navigation.NavigateTo("/login"); return; }
+        _match = Matches.Get(Id); _position = _match.Moves.Count; SetBoard();
+    }
+    private void Previous() { if (_position > 0) { _position--; SetBoard(); } }
+    private void Next() { if (_match is not null && _position < _match.Moves.Count) { _position++; SetBoard(); } }
+    private void SetBoard() => _board = _match!.BuildBoard(_position);
+}

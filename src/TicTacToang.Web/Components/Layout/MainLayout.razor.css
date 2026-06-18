@@ -1,0 +1,15 @@
+.app-main {
+    min-height: 100vh;
+    min-width: 0;
+}
+
+.content {
+    min-height: 100vh;
+    padding: 1.8rem 2rem 2.5rem;
+}
+
+@media (max-width: 720px) {
+    .content {
+        padding: 1rem;
+    }
+}

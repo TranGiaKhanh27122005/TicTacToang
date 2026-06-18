@@ -1,0 +1,27 @@
+@page "/subscription"
+@inject UserSession Session
+@inject PlayerService Players
+@inject NavigationManager Navigation
+
+<a class="return-button" href="/main-menu">Back to Menu</a>
+<header class="page-title"><div><p class="eyebrow">MEMBERSHIP</p><h1>Premium</h1></div></header>
+@if (Session.Player is not null)
+{
+    <section class="subscription-panel">
+        <div>
+            <h2>Match Replay Access</h2>
+            <p class="muted">Review completed games move-by-move and study winning lines.</p>
+            <ul><li>Unlimited replay history</li><li>Move-by-move board playback</li><li>Premium profile indicator</li></ul>
+        </div>
+        <div class="price">
+            <strong>$4.99</strong><span>monthly</span>
+            @if (Session.Player.IsPremium) { <p class="alert-success">Premium active until @Session.Player.SubscriptionEndDate?.ToString("dd MMM yyyy")</p> }
+            else { <button class="primary" @onclick="SubscribeAsync">Activate sandbox subscription</button> }
+        </div>
+    </section>
+}
+
+@code {
+    protected override void OnInitialized() { if (!Session.IsAuthenticated) Navigation.NavigateTo("/login"); }
+    private async Task SubscribeAsync() => Session.Refresh(await Players.ActivateSubscriptionAsync(Session.Player!.Id));
+}

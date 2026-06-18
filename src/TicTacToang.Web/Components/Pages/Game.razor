@@ -1,0 +1,60 @@
+@page "/game/{Id}"
+@inject MatchService Matches
+@inject UserSession Session
+@inject NavigationManager Navigation
+
+@if (_match is not null)
+{
+    <header class="match-header">
+        <a class="return-button" href="/main-menu">Back to Menu</a>
+        <div class="opponent"><strong>@_match.PlayerX.Name</strong><span>X</span></div>
+        <div class="turn">@(_match.Status == MatchStatus.Active ? $"{_match.CurrentTurn}'s turn" : ResultText())</div>
+        <div class="opponent"><span>O</span><strong>@_match.PlayerO.Name</strong></div>
+        <button class="danger" @onclick="ResignAsync" disabled="@(_match.Status != MatchStatus.Active || _match.Mode == GameMode.Local)">Resign</button>
+    </header>
+    @if (_error is not null) { <p class="alert-error">@_error</p> }
+    <div class="@($"board board-{_match.BoardSize}")">
+        @for (var row = 0; row < _match.BoardSize; row++)
+        {
+            var selectedRow = row;
+            @for (var column = 0; column < _match.BoardSize; column++)
+            {
+                var selectedColumn = column;
+                var marker = _board![row, column];
+                var winning = _match.Result.WinningTiles.Any(tile => tile.Row == row && tile.Column == column);
+                <button class="cell @(winning ? "winning" : "")" disabled="@(marker is not null || _match.Status != MatchStatus.Active)" @onclick="() => PlayAsync(selectedRow, selectedColumn)">
+                    <span class="@marker">@marker</span>
+                </button>
+            }
+        }
+    </div>
+    <footer class="match-footer">@_match.Moves.Count moves played | Board @_match.BoardSize x @_match.BoardSize | @_match.Mode</footer>
+}
+
+@code {
+    [Parameter] public string Id { get; set; } = "";
+    private Match? _match;
+    private string?[,]? _board;
+    private string? _error;
+    protected override void OnParametersSet()
+    {
+        if (!Session.IsAuthenticated) { Navigation.NavigateTo("/login"); return; }
+        _match = Matches.Get(Id);
+        _board = _match.BuildBoard();
+    }
+    private async Task PlayAsync(int row, int column)
+    {
+        try
+        {
+            _match = await Matches.PlayAsync(Id, new PlayMoveRequest(Session.Player!.Id, row, column));
+            _board = _match.BuildBoard();
+        }
+        catch (Exception ex) { _error = ex.Message; }
+    }
+    private async Task ResignAsync()
+    {
+        _match = await Matches.ResignAsync(Id, Session.Player!.Id);
+        _board = _match.BuildBoard();
+    }
+    private string ResultText() => _match!.Result.IsDraw ? "Draw" : _match.Result.Winner is null ? "Match ended" : $"{_match.Result.Winner} wins";
+}

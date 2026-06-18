@@ -1,0 +1,35 @@
+@page "/login"
+@inject PlayerService Players
+@inject UserSession Session
+@inject NavigationManager Navigation
+
+<div class="auth-screen">
+    <section class="auth-panel">
+        <div class="logo-mark">TT</div>
+        <h1>Sign in</h1>
+        <p class="muted">Enter the arena and continue your matches.</p>
+        <label>Username or email</label>
+        <input @bind="_identity" autocomplete="username" />
+        <label>Password</label>
+        <input @bind="_password" type="password" autocomplete="current-password" />
+        @if (_error is not null) { <p class="alert-error">@_error</p> }
+        <button class="primary" @onclick="LoginAsync">Sign in</button>
+        <p class="auth-foot">New player? <a href="/register">Create account</a></p>
+    </section>
+</div>
+
+@code {
+    private string _identity = "playera";
+    private string _password = "PlayerA@123";
+    private string? _error;
+
+    private async Task LoginAsync()
+    {
+        try
+        {
+            Session.SignIn(await Players.LoginAsync(new LoginRequest(_identity, _password)));
+            Navigation.NavigateTo("/main-menu");
+        }
+        catch (Exception ex) { _error = ex.Message; }
+    }
+}

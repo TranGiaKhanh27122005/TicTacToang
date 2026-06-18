@@ -1,0 +1,125 @@
+@page "/profile"
+@inject UserSession Session
+@inject PlayerService Players
+@inject MatchService Matches
+@inject NavigationManager Navigation
+
+@if (Session.Player is not null)
+{
+    <div class="profile-page">
+        <div class="profile-topbar">
+            <a class="return-button" href="/main-menu">Back to Menu</a>
+            <div>
+                <p class="eyebrow">ACCOUNT</p>
+                <h1>Profile</h1>
+            </div>
+        </div>
+
+        <div class="profile-grid">
+            <section class="profile-card">
+                <img class="avatar" src="/Mambo.png" alt="Profile avatar" />
+                <h2>@Session.Player.Name</h2>
+                <p class="muted">@Session.Player.Email</p>
+                <div class="badges">
+                    <span>Player Hub</span>
+                    <span>@(Session.Player.IsActive ? "Active" : "Inactive")</span>
+                    <span>@(Session.Player.IsPremium ? "Premium On" : "Premium Off")</span>
+                </div>
+                <dl>
+                    <dt>Matches</dt><dd>@Matches.History(Session.Player.Id).Count</dd>
+                    <dt>Country</dt><dd>@Session.Player.Country</dd>
+                    <dt>Role</dt><dd>@Session.Player.Role</dd>
+                    <dt>Subscription Ends</dt><dd>@(Session.Player.SubscriptionEndDate?.ToString("dd MMM yyyy") ?? "None")</dd>
+                    <dt>User ID</dt><dd class="profile-id">@Session.Player.Id</dd>
+                </dl>
+            </section>
+
+            <section class="profile-workspace">
+                <div class="form-panel">
+                    <h2>Edit Profile</h2>
+                    <div class="profile-form-grid">
+                        <label>Display name<input @bind="_name" /></label>
+                        <label>Username<input @bind="_username" /></label>
+                        <label>Email<input @bind="_email" type="email" /></label>
+                        <label>Country<input @bind="_country" /></label>
+                    </div>
+                    <div class="actions">
+                        <button class="primary" @onclick="SaveAsync">Save changes</button>
+                    </div>
+                </div>
+
+                <div class="form-panel">
+                    <h2>Change Password</h2>
+                    <div class="profile-form-grid">
+                        <label>Current password<input @bind="_currentPassword" type="password" /></label>
+                        <label>New password<input @bind="_newPassword" type="password" /></label>
+                    </div>
+                    <div class="actions">
+                        <button @onclick="ChangePasswordAsync">Update password</button>
+                    </div>
+                    @if (_message is not null) { <p class="@(_failed ? "alert-error" : "alert-success")">@_message</p> }
+                </div>
+            </section>
+        </div>
+
+        <section class="profile-history table-panel">
+            <div class="profile-history-header">
+                <div>
+                    <p class="eyebrow">SESSIONS</p>
+                    <h2>Profile Game Sessions</h2>
+                </div>
+                <a href="/match-history">View all</a>
+            </div>
+            @if (Matches.History(Session.Player.Id).Any())
+            {
+                <table>
+                    <thead><tr><th>Match</th><th>Mode</th><th>Opponent</th><th>Result</th><th>Moves</th><th></th></tr></thead>
+                    <tbody>
+                        @foreach (var match in Matches.History(Session.Player.Id).Take(5))
+                        {
+                            <tr>
+                                <td>@match.Id[..Math.Min(14, match.Id.Length)]</td>
+                                <td>@match.Mode</td>
+                                <td>@(match.PlayerX.PlayerId == Session.Player.Id ? match.PlayerO.Name : match.PlayerX.Name)</td>
+                                <td>@Result(match)</td>
+                                <td>@match.Moves.Count</td>
+                                <td><a href="@($"/replay/{match.Id}")">Replay</a></td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            }
+            else
+            {
+                <p class="muted">No completed game sessions yet.</p>
+            }
+        </section>
+    </div>
+}
+
+@code {
+    private string _name = "", _username = "", _email = "", _country = "", _currentPassword = "", _newPassword = "";
+    private string? _message; private bool _failed;
+
+    protected override void OnInitialized()
+    {
+        if (!Session.IsAuthenticated) { Navigation.NavigateTo("/login"); return; }
+        _name = Session.Player!.Name; _username = Session.Player.Username; _email = Session.Player.Email; _country = Session.Player.Country;
+    }
+
+    private async Task SaveAsync()
+    {
+        try { Session.Refresh(await Players.UpdateProfileAsync(Session.Player!.Id, new UpdateProfileRequest(_name, _username, _email, _country, Session.Player.Avatar))); _failed = false; _message = "Profile saved."; }
+        catch (Exception ex) { _failed = true; _message = ex.Message; }
+    }
+
+    private async Task ChangePasswordAsync()
+    {
+        try { await Players.ChangePasswordAsync(Session.Player!.Id, _currentPassword, _newPassword); _failed = false; _message = "Password changed."; }
+        catch (Exception ex) { _failed = true; _message = ex.Message; }
+    }
+
+    private string Result(Match match) => match.Result.IsDraw ? "Draw" :
+        (match.PlayerX.PlayerId == Session.Player!.Id && match.Result.Winner == Marker.X) ||
+        (match.PlayerO.PlayerId == Session.Player.Id && match.Result.Winner == Marker.O) ? "Win" : "Loss";
+}

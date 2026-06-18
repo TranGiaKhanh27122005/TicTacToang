@@ -1,0 +1,39 @@
+@page "/register"
+@inject PlayerService Players
+@inject NavigationManager Navigation
+
+<div class="auth-screen">
+    <section class="auth-panel wide">
+        <a class="return-button auth-return" href="/login">Back to Login</a>
+        <h1>Create account</h1>
+        <div class="form-grid">
+            <label>Display name<input @bind="_name" /></label>
+            <label>Username<input @bind="_username" /></label>
+            <label>Email<input @bind="_email" type="email" /></label>
+            <label>Country<input @bind="_country" /></label>
+            <label class="span-two">Password<input @bind="_password" type="password" /></label>
+        </div>
+        @if (_error is not null) { <p class="alert-error">@_error</p> }
+        <div class="actions">
+            <button class="primary" @onclick="RegisterAsync">Register</button>
+        </div>
+    </section>
+</div>
+
+@code {
+    private string _name = "";
+    private string _username = "";
+    private string _email = "";
+    private string _country = "Vietnam";
+    private string _password = "";
+    private string? _error;
+    private async Task RegisterAsync()
+    {
+        try
+        {
+            await Players.RegisterAsync(new RegisterRequest(_name, _username, _email, _password, _country));
+            Navigation.NavigateTo("/login");
+        }
+        catch (Exception ex) { _error = ex.Message; }
+    }
+}

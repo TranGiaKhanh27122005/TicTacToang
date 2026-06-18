@@ -1,0 +1,167 @@
+@page "/admin"
+@inject UserSession Session
+@inject PlayerService Players
+@inject MatchService Matches
+@inject AdminDashboardService Dashboard
+@inject NavigationManager Navigation
+
+@if (!Session.IsAdmin)
+{
+    <a class="return-button" href="/main-menu">Back to Menu</a>
+    <section class="empty-state"><h1>403</h1><p>Administrator access is required.</p></section>
+}
+else
+{
+    <a class="return-button" href="/main-menu">Back to Menu</a>
+    <header class="page-title">
+        <div>
+            <p class="eyebrow">ADMINISTRATION</p>
+            <h1>Management Console</h1>
+        </div>
+    </header>
+
+    <section class="admin-stats" aria-label="Dashboard statistics">
+        <article><span>Total Users</span><strong>@_stats.TotalUsers</strong></article>
+        <article><span>Active Users</span><strong>@_stats.ActiveUsers</strong></article>
+        <article><span>Premium Users</span><strong>@_stats.PremiumUsers</strong></article>
+        <article><span>Total Matches</span><strong>@_stats.TotalMatches</strong></article>
+        <article><span>Open Rooms</span><strong>@_stats.OpenRooms</strong></article>
+        <article><span>Moves Played</span><strong>@_stats.MovesPlayed</strong></article>
+    </section>
+
+    <div class="admin-management-grid">
+        <section class="table-panel admin-users-panel">
+            <header class="admin-panel-header">
+                <div>
+                    <h2>User Management</h2>
+                    <p>@FilteredPlayers.Count account(s) found</p>
+                </div>
+                <button type="button" @onclick="ResetFilters">Reset</button>
+            </header>
+
+            <div class="admin-filters">
+                <label>
+                    Search
+                    <input @bind="_search" @bind:event="oninput" placeholder="Name, username, email" />
+                </label>
+                <label>
+                    Role
+                    <select @bind="_role">
+                        <option value="all">All roles</option>
+                        <option value="Admin">Admin</option>
+                        <option value="Moderator">Moderator</option>
+                        <option value="Player">Player</option>
+                    </select>
+                </label>
+                <label>
+                    Status
+                    <select @bind="_status">
+                        <option value="all">All statuses</option>
+                        <option value="Active">Active</option>
+                        <option value="Inactive">Inactive</option>
+                    </select>
+                </label>
+                <label>
+                    Premium
+                    <select @bind="_premium">
+                        <option value="all">All users</option>
+                        <option value="premium">Premium</option>
+                        <option value="standard">Standard</option>
+                    </select>
+                </label>
+            </div>
+
+            <div class="admin-user-list">
+                @foreach (var player in FilteredPlayers)
+                {
+                    <article class="admin-user-row">
+                        <span class="admin-user-avatar"><img src="@AvatarPath(player.Avatar)" alt="@player.Name avatar" /></span>
+                        <span class="admin-user-main">
+                            <strong>@player.Name</strong>
+                            <small>@player.Username | @player.Email</small>
+                        </span>
+                        <span class="admin-badge">@player.Role</span>
+                        <span class="@($"admin-badge {(player.IsActive ? "active" : "inactive")}")">@(player.IsActive ? "Active" : "Banned")</span>
+                        <span class="@($"admin-badge {(player.IsPremium ? "premium" : "")}")">@(player.IsPremium ? "Premium" : "Standard")</span>
+                        <button type="button" class="@(player.IsActive ? "danger" : "primary")" @onclick="() => ToggleStatus(player)">
+                            @(player.IsActive ? "Ban" : "Unban")
+                        </button>
+                    </article>
+                }
+            </div>
+        </section>
+
+        <section class="table-panel admin-summary-panel">
+            <h2>Platform Summary</h2>
+            <div class="admin-summary-list">
+                <p><span>Inactive users</span><strong>@_stats.InactiveUsers</strong></p>
+                <p><span>Active or waiting matches</span><strong>@_stats.ActiveMatches</strong></p>
+                <p><span>Completed matches</span><strong>@_stats.CompletedMatches</strong></p>
+                <p><span>Average moves per match</span><strong>@_stats.AverageMovesPerMatch</strong></p>
+                <p><span>10x10 matches</span><strong>@_stats.TenByTenMatches</strong></p>
+                <p><span>15x15 matches</span><strong>@_stats.FifteenByFifteenMatches</strong></p>
+            </div>
+
+            <h2 class="admin-subtitle">Recent Matches</h2>
+            <div class="admin-match-list">
+                @foreach (var match in Matches.List().Take(8))
+                {
+                    <article>
+                        <span><strong>@match.Mode</strong><small>@match.Status | @match.Moves.Count moves</small></span>
+                        @if (match.Status is MatchStatus.Active or MatchStatus.Waiting)
+                        {
+                            <button type="button" class="danger" @onclick="() => Abort(match.Id)">Abort</button>
+                        }
+                    </article>
+                }
+            </div>
+        </section>
+    </div>
+}
+
+@code {
+    private AdminDashboardStats _stats = new(0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0);
+    private string _search = "";
+    private string _role = "all";
+    private string _status = "all";
+    private string _premium = "all";
+
+    private IReadOnlyList<PlayerView> FilteredPlayers =>
+        Players.Search(new AdminUserQuery(_search, _role, _status, _premium));
+
+    protected override void OnInitialized()
+    {
+        if (!Session.IsAuthenticated)
+        {
+            Navigation.NavigateTo("/login");
+            return;
+        }
+
+        RefreshStats();
+    }
+
+    private async Task ToggleStatus(PlayerView player)
+    {
+        await Players.SetAccountStatusAsync(player.Id, player.IsActive ? AccountStatus.Inactive : AccountStatus.Active);
+        RefreshStats();
+    }
+
+    private async Task Abort(string id)
+    {
+        await Matches.AbortAsync(id);
+        RefreshStats();
+    }
+
+    private void ResetFilters()
+    {
+        _search = "";
+        _role = "all";
+        _status = "all";
+        _premium = "all";
+    }
+
+    private void RefreshStats() => _stats = Dashboard.GetStats();
+
+    private static string AvatarPath(string avatar) =>
+        string.IsNullOrWhiteSpace(avatar) ? "/Mambo.png" : avatar.StartsWith('/') ? avatar : $"/{avatar}";
+}
