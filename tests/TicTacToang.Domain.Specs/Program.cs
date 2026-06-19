@@ -8,7 +8,8 @@ var specs = new (string Name, Action Execute)[]
     ("occupied cells are rejected", OccupiedCell),
     ("opponent cannot move out of turn", WrongTurn),
     ("resignation awards win to opponent", Resignation),
-    ("waiting multiplayer match activates after join", MultiplayerJoin)
+    ("waiting multiplayer match activates after join", MultiplayerJoin),
+    ("three player match rotates through third marker", ThreePlayerTurnRotation)
 };
 
 var failed = 0;
@@ -83,6 +84,24 @@ static void MultiplayerJoin()
     Assert(match.Status == MatchStatus.Waiting, "Expected waiting status.");
     match.Join(new MatchPlayer(Guid.NewGuid(), "Opponent", Marker.O));
     Assert(match.Status == MatchStatus.Active, "Expected active status.");
+}
+
+static void ThreePlayerTurnRotation()
+{
+    var match = Match.Create(
+        GameMode.Multiplayer,
+        10,
+        60,
+        new MatchPlayer(Guid.NewGuid(), "A", Marker.X),
+        new MatchPlayer(Guid.NewGuid(), "B", Marker.O),
+        new MatchPlayer(Guid.NewGuid(), "C", Marker.A));
+
+    match.Play(match.PlayerX.PlayerId, 0, 0);
+    Assert(match.CurrentTurn == Marker.O, "Expected O after X.");
+    match.Play(match.PlayerO.PlayerId, 0, 1);
+    Assert(match.CurrentTurn == Marker.A, "Expected A after O.");
+    match.Play(match.PlayerA!.PlayerId, 0, 2);
+    Assert(match.CurrentTurn == Marker.X, "Expected X after A.");
 }
 
 static void Assert(bool condition, string message)

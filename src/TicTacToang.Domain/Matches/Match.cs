@@ -5,7 +5,7 @@ namespace TicTacToang.Domain.Matches;
 
 public enum GameMode { SinglePlayer, Multiplayer, Local }
 public enum MatchStatus { Waiting, Active, Completed, Abandoned }
-public enum Marker { X, O }
+public enum Marker { X, O, A }
 public enum WinReason { FiveInRow, Timeout, Resignation, DrawAgreement, Aborted }
 public enum AiDifficulty { Easy, Medium, Hard }
 
@@ -38,6 +38,7 @@ public sealed class Match
     public int TimeControlSeconds { get; init; }
     public MatchPlayer PlayerX { get; init; } = null!;
     [JsonInclude] public MatchPlayer PlayerO { get; private set; } = null!;
+    [JsonInclude] public MatchPlayer? PlayerA { get; private set; }
     [JsonInclude] public Marker CurrentTurn { get; private set; } = Marker.X;
     [JsonInclude] public MatchStatus Status { get; private set; }
     public List<Move> Moves { get; init; } = [];
@@ -45,7 +46,9 @@ public sealed class Match
     public DateTimeOffset StartedAt { get; init; } = DateTimeOffset.UtcNow;
     [JsonInclude] public DateTimeOffset? CompletedAt { get; private set; }
 
-    public static Match Create(GameMode mode, int boardSize, int timeControlSeconds, MatchPlayer playerX, MatchPlayer playerO)
+    public IReadOnlyList<MatchPlayer> Players => PlayerA is null ? [PlayerX, PlayerO] : [PlayerX, PlayerO, PlayerA];
+
+    public static Match Create(GameMode mode, int boardSize, int timeControlSeconds, MatchPlayer playerX, MatchPlayer playerO, MatchPlayer? playerA = null)
     {
         if (boardSize is not (10 or 15))
         {
@@ -64,6 +67,7 @@ public sealed class Match
             TimeControlSeconds = timeControlSeconds,
             PlayerX = playerX with { Marker = Marker.X },
             PlayerO = playerO with { Marker = Marker.O },
+            PlayerA = playerA is null ? null : playerA with { Marker = Marker.A },
             Status = mode == GameMode.Multiplayer && playerO.PlayerId is null ? MatchStatus.Waiting : MatchStatus.Active
         };
     }
@@ -82,7 +86,7 @@ public sealed class Match
     public Move Play(Guid? playerId, int row, int column, int timeTakenSeconds = 0)
     {
         RequireActive();
-        var player = CurrentTurn == Marker.X ? PlayerX : PlayerO;
+        var player = CurrentPlayer();
         if (Mode != GameMode.Local && !player.IsAi && player.PlayerId != playerId)
         {
             throw new DomainException("It is not your turn.");
@@ -112,7 +116,7 @@ public sealed class Match
         }
         else
         {
-            CurrentTurn = CurrentTurn == Marker.X ? Marker.O : Marker.X;
+            CurrentTurn = NextTurn();
         }
 
         return move;
@@ -121,9 +125,9 @@ public sealed class Match
     public void Resign(Guid playerId)
     {
         RequireActive();
-        var winner = PlayerX.PlayerId == playerId ? Marker.O
-            : PlayerO.PlayerId == playerId ? Marker.X
-            : throw new DomainException("Player is not part of this match.");
+        var resigningPlayer = Players.FirstOrDefault(player => player.PlayerId == playerId)
+            ?? throw new DomainException("Player is not part of this match.");
+        var winner = NextTurn(resigningPlayer.Marker);
         Complete(new MatchResult { Winner = winner, Reason = WinReason.Resignation });
     }
 
@@ -165,6 +169,24 @@ public sealed class Match
         }
 
         return [];
+    }
+
+    private MatchPlayer CurrentPlayer() =>
+        Players.FirstOrDefault(player => player.Marker == CurrentTurn)
+            ?? throw new DomainException("Current turn does not belong to a player.");
+
+    private Marker NextTurn() => NextTurn(CurrentTurn);
+
+    private Marker NextTurn(Marker marker)
+    {
+        var players = Players;
+        var currentIndex = players.ToList().FindIndex(player => player.Marker == marker);
+        if (currentIndex < 0)
+        {
+            throw new DomainException("Turn marker does not belong to this match.");
+        }
+
+        return players[(currentIndex + 1) % players.Count].Marker;
     }
 
     private static void AddDirection(List<Coordinate> line, HashSet<(int Row, int Column)> occupied, int row, int column, int dr, int dc)

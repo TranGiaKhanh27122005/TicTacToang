@@ -157,7 +157,7 @@
     }
 
     private string Outcome(Match match) => match.Result.IsDraw ? "Draw" :
-        match.Result.Winner?.ToString() == (match.PlayerX.PlayerId == Session.Player!.Id ? "X" : "O") ? "Win" : "Loss";
+        match.Players.Any(player => player.PlayerId == Session.Player!.Id && player.Marker == match.Result.Winner) ? "Win" : "Loss";
 
     private sealed record MenuTab(string Id, string Label, int Count);
 }

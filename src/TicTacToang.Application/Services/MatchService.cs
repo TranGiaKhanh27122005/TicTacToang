@@ -9,7 +9,7 @@ public sealed class MatchService(IApplicationStore store, PlayerService players,
 {
     public IReadOnlyList<Match> List() => store.Matches.OrderByDescending(match => match.StartedAt).ToList();
     public IReadOnlyList<Match> History(Guid playerId) => store.Matches
-        .Where(match => (match.PlayerX.PlayerId == playerId || match.PlayerO.PlayerId == playerId)
+        .Where(match => match.Players.Any(player => player.PlayerId == playerId)
             && match.Status is MatchStatus.Completed or MatchStatus.Abandoned)
         .OrderByDescending(match => match.StartedAt).ToList();
     public Match Get(string id) => store.Matches.FirstOrDefault(match => match.Id == id)
@@ -47,11 +47,12 @@ public sealed class MatchService(IApplicationStore store, PlayerService players,
         match.Play(request.PlayerId, request.Row, request.Column, request.TimeTakenSeconds);
         if (match.Status == MatchStatus.Active)
         {
-            var current = match.CurrentTurn == Marker.X ? match.PlayerX : match.PlayerO;
-            if (current.IsAi)
+            var current = match.Players.First(player => player.Marker == match.CurrentTurn);
+            while (match.Status == MatchStatus.Active && current.IsAi)
             {
                 var tile = ai.ChooseMove(match, current.AiDifficulty ?? AiDifficulty.Medium);
                 match.Play(null, tile.Row, tile.Column);
+                current = match.Players.First(player => player.Marker == match.CurrentTurn);
             }
         }
         await store.SaveAsync();

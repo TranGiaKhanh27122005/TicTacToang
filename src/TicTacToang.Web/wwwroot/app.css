@@ -386,6 +386,7 @@ label { display: block; color: #d7e1ff; font-size: .9rem; font-weight: 650; }
 }
 .cell .X { color: #87a8ff; }
 .cell .O { color: #ff7a99; }
+.cell .A { color: #67e8b7; }
 .match-footer,
 .replay-controls {
     display: flex;

@@ -60,9 +60,9 @@ public sealed class GameRoom
         {
             throw new DomainException("Only the host can start this room.");
         }
-        if (Members.Count < 2)
+        if (Members.Count < Capacity)
         {
-            throw new DomainException("Add one more player or AI before starting the game.");
+            throw new DomainException("Fill every player slot before starting the game.");
         }
         Status = RoomStatus.InBattle;
     }

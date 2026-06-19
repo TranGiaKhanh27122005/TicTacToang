@@ -48,7 +48,7 @@ public sealed class AdminDashboardService(IApplicationStore store)
     public AiAnalyticsSummary GetAiAnalytics()
     {
         var aiMatches = store.Matches
-            .Where(match => match.PlayerX.IsAi || match.PlayerO.IsAi)
+            .Where(match => match.Players.Any(player => player.IsAi))
             .Where(match => match.Status is MatchStatus.Completed or MatchStatus.Abandoned)
             .ToList();
 
@@ -130,7 +130,7 @@ public sealed class AdminDashboardService(IApplicationStore store)
             Mode: match.Mode.ToString(),
             Status: match.Status.ToString(),
             PlayerX: match.PlayerX.Name,
-            PlayerO: match.PlayerO.Name,
+            PlayerO: string.Join(", ", match.Players.Skip(1).Select(player => player.Name)),
             MoveCount: match.Moves.Count,
             AverageSecondsPerMove: averageSecondsPerMove,
             Severity: severity,
@@ -145,8 +145,8 @@ public sealed class AdminDashboardService(IApplicationStore store)
 
     private static string AiDifficultyLabel(Match match)
     {
-        var aiPlayer = match.PlayerX.IsAi ? match.PlayerX : match.PlayerO;
-        return (aiPlayer.AiDifficulty ?? AiDifficulty.Medium).ToString();
+        var aiPlayer = match.Players.FirstOrDefault(player => player.IsAi);
+        return (aiPlayer?.AiDifficulty ?? AiDifficulty.Medium).ToString();
     }
 
     private static bool PlayerBeatAi(Match match)
@@ -156,7 +156,7 @@ public sealed class AdminDashboardService(IApplicationStore store)
             return false;
         }
 
-        var winner = match.Result.Winner.Value == Marker.X ? match.PlayerX : match.PlayerO;
+        var winner = match.Players.First(player => player.Marker == match.Result.Winner.Value);
         return !winner.IsAi;
     }
 
@@ -167,7 +167,7 @@ public sealed class AdminDashboardService(IApplicationStore store)
             return false;
         }
 
-        var winner = match.Result.Winner.Value == Marker.X ? match.PlayerX : match.PlayerO;
+        var winner = match.Players.First(player => player.Marker == match.Result.Winner.Value);
         return winner.IsAi;
     }
 

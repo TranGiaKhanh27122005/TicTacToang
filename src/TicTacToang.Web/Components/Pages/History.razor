@@ -15,7 +15,7 @@
             {
                 <tr>
                     <td>@match.Id[..Math.Min(14, match.Id.Length)]</td><td>@match.Mode</td>
-                    <td>@(match.PlayerX.PlayerId == Session.Player.Id ? match.PlayerO.Name : match.PlayerX.Name)</td>
+                    <td>@Opponents(match)</td>
                     <td>@Result(match)</td><td>@match.Moves.Count</td>
                     <td><a href="@($"/replay/{match.Id}")">Replay</a></td>
                 </tr>
@@ -28,6 +28,8 @@
 @code {
     protected override void OnInitialized() { if (!Session.IsAuthenticated) Navigation.NavigateTo("/login"); }
     private string Result(Match match) => match.Result.IsDraw ? "Draw" :
-        (match.PlayerX.PlayerId == Session.Player!.Id && match.Result.Winner == Marker.X) ||
-        (match.PlayerO.PlayerId == Session.Player.Id && match.Result.Winner == Marker.O) ? "Win" : "Loss";
+        match.Players.Any(player => player.PlayerId == Session.Player!.Id && player.Marker == match.Result.Winner) ? "Win" : "Loss";
+
+    private string Opponents(Match match) =>
+        string.Join(", ", match.Players.Where(player => player.PlayerId != Session.Player!.Id).Select(player => player.Name));
 }

@@ -18,14 +18,17 @@ public sealed class GomokuAi
             return adjacent.Count > 0 ? adjacent[Random.Shared.Next(adjacent.Count)] : empty[Random.Shared.Next(empty.Count)];
         }
 
-        var opponent = match.CurrentTurn == Marker.X ? Marker.O : Marker.X;
+        var opponents = match.Players
+            .Where(player => player.Marker != match.CurrentTurn)
+            .Select(player => player.Marker)
+            .ToList();
         return empty.FirstOrDefault(tile => WouldWin(board, tile, match.CurrentTurn, match.BoardSize))
-            ?? empty.FirstOrDefault(tile => WouldWin(board, tile, opponent, match.BoardSize))
-            ?? ScoreMoves(board, empty, match.CurrentTurn, opponent, match.BoardSize);
+            ?? empty.FirstOrDefault(tile => opponents.Any(opponent => WouldWin(board, tile, opponent, match.BoardSize)))
+            ?? ScoreMoves(board, empty, match.CurrentTurn, opponents, match.BoardSize);
     }
 
-    private static Coordinate ScoreMoves(string?[,] board, IEnumerable<Coordinate> choices, Marker marker, Marker opponent, int size) =>
-        choices.OrderByDescending(tile => Score(board, tile, marker, size) + Score(board, tile, opponent, size) * 0.9)
+    private static Coordinate ScoreMoves(string?[,] board, IEnumerable<Coordinate> choices, Marker marker, IReadOnlyList<Marker> opponents, int size) =>
+        choices.OrderByDescending(tile => Score(board, tile, marker, size) + opponents.Max(opponent => Score(board, tile, opponent, size)) * 0.9)
             .ThenBy(tile => Math.Abs(tile.Row - size / 2) + Math.Abs(tile.Column - size / 2)).First();
 
     private static double Score(string?[,] board, Coordinate tile, Marker marker, int size)

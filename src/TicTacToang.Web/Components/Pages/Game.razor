@@ -7,9 +7,14 @@
 {
     <header class="match-header">
         <a class="return-button" href="/main-menu">Back to Menu</a>
-        <div class="opponent"><strong>@_match.PlayerX.Name</strong><span>X</span></div>
+        @foreach (var player in _match.Players)
+        {
+            <div class="opponent" @key="player.Marker">
+                <strong>@player.Name</strong>
+                <span>@player.Marker</span>
+            </div>
+        }
         <div class="turn">@(_match.Status == MatchStatus.Active ? $"{_match.CurrentTurn}'s turn" : ResultText())</div>
-        <div class="opponent"><span>O</span><strong>@_match.PlayerO.Name</strong></div>
         <button class="danger" @onclick="ResignAsync" disabled="@(_match.Status != MatchStatus.Active || _match.Mode == GameMode.Local)">Resign</button>
     </header>
     @if (_error is not null) { <p class="alert-error">@_error</p> }

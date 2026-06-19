@@ -84,12 +84,14 @@ public sealed class RoomService(IApplicationStore store, PlayerService players)
         room.Start(hostId);
         var first = room.Members[0];
         var second = room.Members[1];
+        var third = room.Members.Count > 2 ? room.Members[2] : null;
         var match = Match.Create(
-            second.IsAi ? GameMode.SinglePlayer : GameMode.Multiplayer,
+            room.Members.Any(member => member.IsAi) ? GameMode.SinglePlayer : GameMode.Multiplayer,
             room.Settings.BoardSize,
             room.Settings.TimeToThinkSeconds,
             new MatchPlayer(first.PlayerId, first.Name, Marker.X, first.Avatar),
-            new MatchPlayer(second.PlayerId, second.Name, Marker.O, second.Avatar, second.IsAi, second.Difficulty));
+            new MatchPlayer(second.PlayerId, second.Name, Marker.O, second.Avatar, second.IsAi, second.Difficulty),
+            third is null ? null : new MatchPlayer(third.PlayerId, third.Name, Marker.A, third.Avatar, third.IsAi, third.Difficulty));
         store.Matches.Add(match);
         await store.SaveAsync();
         return match;

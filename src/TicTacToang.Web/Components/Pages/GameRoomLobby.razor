@@ -134,7 +134,7 @@
     private string HostAvatar => string.IsNullOrWhiteSpace(Host?.Avatar) ? "/Mambo.png" : Host!.Avatar;
     private bool IsHost => _room?.HostId == Session.Player?.Id;
     private bool CanAddAi => IsHost && _room is { Status: RoomStatus.Available } && _room.Members.Count < _room.Capacity;
-    private bool CanStart => IsHost && _room is not null && _room.Members.Count >= 2;
+    private bool CanStart => IsHost && _room is not null && _room.Members.Count == _room.Capacity;
 
     protected override void OnParametersSet()
     {
