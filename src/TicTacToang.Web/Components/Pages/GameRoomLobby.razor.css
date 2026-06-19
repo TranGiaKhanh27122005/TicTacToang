@@ -11,7 +11,7 @@
 .game-room-chat,
 .vs-card,
 .open-seat button,
-.open-seat span,
+.locked-seat,
 .start-game-button {
     background: rgba(16, 18, 42, .78);
     border: 1px solid rgba(205, 211, 255, .2);
@@ -91,9 +91,9 @@
 
 .game-room-stage {
     position: absolute;
-    inset: 12% 26% 22% 26%;
+    inset: 12% 22% 22% 18%;
     display: grid;
-    grid-template-columns: 170px 170px 170px;
+    grid-template-columns: repeat(auto-fit, minmax(130px, 170px));
     align-items: center;
     justify-content: center;
     gap: 4.5rem;
@@ -128,15 +128,19 @@
     position: absolute;
     top: -14px;
     right: -14px;
-    width: 42px;
-    height: 42px;
-    display: grid;
-    place-items: center;
+    min-width: 52px;
+    min-height: 32px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0 .65rem;
     border-radius: 999px;
     border: 2px solid #f9d64b;
     background: #101326;
     color: #f9d64b;
-    font-size: 1.45rem;
+    font-size: .8rem;
+    font-weight: 900;
+    text-transform: uppercase;
 }
 
 .player-name-row {
@@ -170,6 +174,28 @@
     border: 1px solid rgba(143, 177, 255, .52);
 }
 
+.opponent-card .avatar-frame {
+    background: linear-gradient(135deg, #8a6cff, #f27dcd);
+}
+
+.ai-frame {
+    display: grid;
+    place-items: center;
+    background: linear-gradient(135deg, #6d86ff, #9b6dff 50%, #f27dcd);
+}
+
+.ai-avatar {
+    width: 100%;
+    height: 100%;
+    display: grid;
+    place-items: center;
+    border-radius: 14px;
+    background: rgba(10, 13, 31, .82);
+    color: #d8d2ff;
+    font-size: 2.2rem;
+    font-weight: 900;
+}
+
 .vs-card {
     width: 170px;
     aspect-ratio: 1;
@@ -184,19 +210,49 @@
 .open-seat {
     display: grid;
     place-items: center;
+    gap: .6rem;
 }
 
 .open-seat button,
-.open-seat span {
+.locked-seat {
     width: 130px;
     aspect-ratio: 1;
     display: grid;
     place-items: center;
+    align-content: center;
+    gap: .2rem;
     border-radius: 18px;
     border-style: dashed;
     color: #aeb7d4;
-    font-size: 3rem;
     font-weight: 300;
+}
+
+.open-seat button {
+    cursor: pointer;
+}
+
+.open-seat button:hover {
+    border-color: rgba(143, 177, 255, .72);
+    color: #dfe7ff;
+    box-shadow: 0 18px 44px rgba(0, 0, 0, .28), 0 0 42px rgba(143, 177, 255, .18);
+}
+
+.open-seat button span,
+.locked-seat span {
+    font-size: 3rem;
+    line-height: 1;
+}
+
+.open-seat small,
+.locked-seat small {
+    color: #aeb7d4;
+    font-size: .82rem;
+    font-weight: 800;
+    text-transform: uppercase;
+}
+
+.locked-seat {
+    opacity: .68;
 }
 
 .friends-online {

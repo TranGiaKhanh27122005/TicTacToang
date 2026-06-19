@@ -42,7 +42,8 @@ public sealed class RoomService(IApplicationStore store, PlayerService players)
         var player = players.Find(playerId);
         player.RequireActive();
         var room = Get(roomId);
-        room.AddMember(new RoomMember(player.Id, player.Name, player.Avatar, false, null, "O", "#f27d68"));
+        var seatStyle = NextSeatStyle(room);
+        room.AddMember(new RoomMember(player.Id, player.Name, player.Avatar, false, null, seatStyle.Marker, seatStyle.Color));
         await store.SaveAsync();
         return room;
     }
@@ -51,7 +52,8 @@ public sealed class RoomService(IApplicationStore store, PlayerService players)
     {
         var room = Get(roomId);
         if (room.HostId != hostId) throw new DomainException("Only the host can configure AI players.");
-        room.AddMember(new RoomMember(null, $"AI ({difficulty})", "", true, difficulty, "O", "#f27d68"));
+        var seatStyle = NextSeatStyle(room);
+        room.AddMember(new RoomMember(null, $"AI {room.Members.Count} ({difficulty})", "", true, difficulty, seatStyle.Marker, seatStyle.Color));
         await store.SaveAsync();
         return room;
     }
@@ -92,4 +94,12 @@ public sealed class RoomService(IApplicationStore store, PlayerService players)
         await store.SaveAsync();
         return match;
     }
+
+    private static (string Marker, string Color) NextSeatStyle(GameRoom room) =>
+        room.Members.Count switch
+        {
+            1 => ("O", "#f27d68"),
+            2 => ("A", "#67e8b7"),
+            _ => ("B", "#9c6cff")
+        };
 }

@@ -21,7 +21,7 @@
             <section class="player-card">
                 <div class="avatar-frame">
                     <img src="@HostAvatar" alt="@HostName avatar" />
-                    <span class="owner-crown">♕</span>
+                    <span class="owner-crown">Host</span>
                 </div>
                 <div class="player-name-row">
                     <strong>@HostName</strong>
@@ -32,16 +32,47 @@
 
             <div class="vs-card">VS</div>
 
-            <section class="open-seat">
-                @if (CanAddAi)
-                {
-                    <button type="button" @onclick="AddAiAsync" aria-label="Add AI player">+</button>
-                }
-                else
-                {
-                    <span>+</span>
-                }
-            </section>
+            @foreach (var member in Opponents)
+            {
+                <section class="player-card opponent-card" @key="member.Name">
+                    <div class="avatar-frame @(member.IsAi ? "ai-frame" : "")">
+                        @if (member.IsAi)
+                        {
+                            <span class="ai-avatar">AI</span>
+                        }
+                        else
+                        {
+                            <img src="@AvatarFor(member)" alt="@member.Name avatar" />
+                        }
+                    </div>
+                    <div class="player-name-row">
+                        <strong>@member.Name</strong>
+                        <span class="marker-pill">@member.Marker</span>
+                        <span class="style-pill">@(member.IsAi ? "AI" : "P")</span>
+                    </div>
+                </section>
+            }
+
+            @for (var seat = 0; seat < EmptySeatCount; seat++)
+            {
+                var seatNumber = _room.Members.Count + seat + 1;
+                <section class="open-seat" @key="seatNumber">
+                    @if (CanAddAi)
+                    {
+                        <button type="button" @onclick="AddAiAsync" aria-label="Add AI player">
+                            <span>+</span>
+                            <small>Add AI</small>
+                        </button>
+                    }
+                    else
+                    {
+                        <div class="locked-seat" aria-label="Empty player seat">
+                            <span>+</span>
+                            <small>Waiting</small>
+                        </div>
+                    }
+                </section>
+            }
         </main>
 
         <aside class="friends-online">
@@ -79,7 +110,6 @@
         </section>
 
         <button type="button" class="start-game-button" disabled="@(!CanStart)" @onclick="StartAsync">
-            <span>▶</span>
             Start Game
         </button>
 
@@ -98,6 +128,8 @@
     private string? _error;
 
     private RoomMember? Host => _room?.Members.FirstOrDefault(member => member.PlayerId == _room.HostId) ?? _room?.Members.FirstOrDefault();
+    private IReadOnlyList<RoomMember> Opponents => _room?.Members.Where(member => member.PlayerId != _room.HostId).ToList() ?? [];
+    private int EmptySeatCount => _room is null ? 0 : Math.Max(0, _room.Capacity - _room.Members.Count);
     private string HostName => Host?.Name ?? "Host";
     private string HostAvatar => string.IsNullOrWhiteSpace(Host?.Avatar) ? "/Mambo.png" : Host!.Avatar;
     private bool IsHost => _room?.HostId == Session.Player?.Id;
@@ -134,6 +166,7 @@
         {
             _room = await Rooms.AddAiAsync(RoomId, Session.Player!.Id, AiDifficulty.Medium);
             _error = null;
+            StateHasChanged();
         }
         catch (Exception ex)
         {
@@ -165,4 +198,7 @@
             _error = ex.Message;
         }
     }
+
+    private static string AvatarFor(RoomMember member) =>
+        string.IsNullOrWhiteSpace(member.Avatar) ? "/Mambo.png" : member.Avatar;
 }
