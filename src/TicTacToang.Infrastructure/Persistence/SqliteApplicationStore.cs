@@ -622,6 +622,7 @@ public sealed class SqliteApplicationStore : IApplicationStore
         };
         battleRoom.AddMember(new RoomMember(ava.Id, ava.Name, ava.Avatar, false, null, "▲", "#f6c94d"));
         battleRoom.AddMember(new RoomMember(kai.Id, kai.Name, kai.Avatar, false, null, "O", "#f27d68"));
+        battleRoom.AddMember(new RoomMember(null, "AI (Medium)", "", true, AiDifficulty.Medium, "A", "#67e8b7"));
         battleRoom.PostMessage(kai.Id, kai.Name, "Ready when you are.");
         battleRoom.Start(ava.Id);
 
