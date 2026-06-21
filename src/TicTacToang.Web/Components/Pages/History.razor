@@ -3,33 +3,62 @@
 @inject UserSession Session
 @inject NavigationManager Navigation
 
-<a class="return-button" href="/main-menu">Back to Menu</a>
-<header class="page-title"><div><p class="eyebrow">RECORDS</p><h1>Match History</h1></div></header>
-@if (Session.Player is not null)
-{
-    <section class="table-panel">
-        <table>
-            <thead><tr><th>Match</th><th>Mode</th><th>Opponent</th><th>Result</th><th>Moves</th><th></th></tr></thead>
-            <tbody>
-            @foreach (var match in Matches.History(Session.Player.Id))
-            {
-                <tr>
-                    <td>@match.Id[..Math.Min(14, match.Id.Length)]</td><td>@match.Mode</td>
-                    <td>@Opponents(match)</td>
-                    <td>@Result(match)</td><td>@match.Moves.Count</td>
-                    <td><a href="@($"/replay/{match.Id}")">Replay</a></td>
-                </tr>
-            }
-            </tbody>
-        </table>
-    </section>
-}
+<style>
+.history-page{width:min(1320px,calc(100% - 1rem));margin:0 auto;padding:.2rem 0 3rem}.history-back{margin-bottom:1.5rem}.history-shell{overflow:hidden;border:1px solid rgba(122,162,255,.18);border-radius:26px;background:linear-gradient(180deg,rgba(27,35,72,.9),rgba(8,13,32,.92));box-shadow:0 22px 58px rgba(0,0,0,.28)}
+.history-hero{position:relative;padding:2.2rem 2.4rem 2.8rem;background:linear-gradient(135deg,rgba(38,48,91,.8),rgba(35,30,84,.72))}.history-kicker{display:inline-flex;padding:.42rem 1rem;border:1px solid rgba(157,231,255,.55);border-radius:999px;background:rgba(28,77,102,.35);color:#a5efff;font-size:.75rem;font-weight:900;letter-spacing:.18em;text-transform:uppercase}.history-hero h1{margin:1.7rem 0 .7rem;color:#fff;background:none;font-size:4rem;text-shadow:none}.history-hero p{margin:0;color:#b4bfdc;font-size:1.05rem}.history-refresh{position:absolute;right:2.4rem;bottom:2.4rem;padding:.8rem 1.25rem;border:1px solid rgba(255,255,255,.48);border-radius:999px;color:#b7c1dd;font-size:.86rem}
+.history-tabs{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:1rem;padding:1.5rem 2.4rem;background:rgba(5,10,28,.48)}.history-tab{min-height:50px;border-radius:0;background:rgba(28,33,62,.5);color:#b7bfd8;letter-spacing:.12em}.history-tab.active{border-color:rgba(153,232,255,.65);background:rgba(24,83,109,.42);color:#d8f7ff;box-shadow:0 0 24px rgba(64,193,236,.1)}.history-tab span{min-width:28px;padding:.18rem .5rem;border-radius:999px;background:rgba(135,145,185,.26);font-size:.72rem;letter-spacing:0}
+.history-tools{padding:2.2rem 2.4rem}.history-tools-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:1.5rem}.history-tools-head strong{color:#fff}.history-reset{min-height:42px;border-radius:999px}.history-filter-grid{display:grid;grid-template-columns:1.25fr .8fr .8fr .8fr 1.1fr 1.1fr .85fr;gap:.8rem}.history-filter-grid label{min-width:0;color:#8f9bbb;font-size:.72rem;letter-spacing:.12em;text-transform:uppercase}.history-filter-grid input,.history-filter-grid select{min-width:0;min-height:54px;margin-top:.6rem;border-radius:16px;background:rgba(7,12,31,.72)}
+.history-summary{display:flex;justify-content:space-between;gap:1rem;margin:2rem 0 1.2rem;color:#a9b4d0}.history-list{display:grid;gap:1.2rem}.history-card{display:grid;grid-template-columns:minmax(0,1fr) 300px;gap:1.5rem;padding:1.8rem;border:1px solid rgba(255,255,255,.55);border-radius:26px;background:rgba(7,12,31,.68)}.history-badges{display:flex;flex-wrap:wrap;gap:.5rem;margin-bottom:1rem}.history-badge{padding:.3rem .75rem;border:1px solid rgba(255,255,255,.45);border-radius:999px;color:#c2cbe3;font-size:.72rem}.history-badge.victory{border-color:rgba(103,232,183,.5);color:#75e9bd}.history-badge.defeat{border-color:rgba(255,92,130,.55);color:#ff7a9a}.history-badge.draw{border-color:rgba(246,201,77,.55);color:#f6d66c}.history-badge.aborted{border-color:rgba(180,188,215,.4);color:#aeb7cf}.history-badge.mode{border-color:rgba(125,216,255,.5);color:#9ce8ff}.history-badge.players{border-color:rgba(178,121,255,.5);color:#d3a7ff}
+.history-players{display:flex;flex-wrap:wrap;gap:.75rem}.history-player{min-width:170px;display:grid;grid-template-columns:52px minmax(0,1fr);align-items:center;gap:.75rem;padding:.75rem 1rem;border:1px solid rgba(255,255,255,.48);border-radius:24px;background:rgba(27,33,63,.66)}.history-player img{width:52px;height:52px;object-fit:cover;border:2px solid rgba(255,255,255,.8);border-radius:999px;background:#fff}.history-player span{min-width:0;display:grid;gap:.25rem}.history-player strong{overflow:hidden;color:#fff;text-overflow:ellipsis;white-space:nowrap}.history-player small{color:#7f8cad;font-weight:900}
+.history-meta{display:flex;flex-wrap:wrap;gap:1.2rem;margin-top:1.2rem;color:#929ebf;font-size:.85rem}.history-card-action{display:grid;align-content:center;gap:1rem}.history-session{display:grid;gap:.35rem;padding:1rem;border:1px solid rgba(255,255,255,.45);border-radius:24px;text-align:center}.history-session span{color:#7e89a8;font-size:.68rem;letter-spacing:.16em;text-transform:uppercase}.history-session strong{overflow:hidden;color:#e3e8f7;font-size:.8rem;text-overflow:ellipsis;white-space:nowrap}.history-replay{min-height:50px;border:0;border-radius:999px;background:linear-gradient(90deg,#d44756,#ca5797);color:#fff;text-align:center}.history-empty{padding:3rem;border:1px dashed rgba(255,255,255,.25);border-radius:22px;color:#909bbb;text-align:center}
+@@media(max-width:1100px){.history-filter-grid{grid-template-columns:repeat(3,minmax(0,1fr))}.history-card{grid-template-columns:1fr}.history-card-action{grid-template-columns:1fr 220px;align-items:center}}
+@@media(max-width:700px){.history-hero{padding:1.5rem}.history-hero h1{font-size:3rem}.history-refresh{position:static;display:inline-block;margin-top:1.4rem}.history-tabs{grid-template-columns:1fr;padding:1rem}.history-tools{padding:1.2rem}.history-filter-grid{grid-template-columns:1fr}.history-summary{display:block}.history-summary span{display:block;margin-top:.5rem}.history-card{padding:1.2rem}.history-card-action{grid-template-columns:1fr}.history-player{width:100%}}
+</style>
 
-@code {
-    protected override void OnInitialized() { if (!Session.IsAuthenticated) Navigation.NavigateTo("/login"); }
-    private string Result(Match match) => match.Result.IsDraw ? "Draw" :
-        match.Players.Any(player => player.PlayerId == Session.Player!.Id && player.Marker == match.Result.Winner) ? "Win" : "Loss";
+<div class="history-page">
+<a class="return-button history-back" href="/main-menu">Back to Menu</a>
+<main class="history-shell">
+<header class="history-hero"><span class="history-kicker">Game Sessions</span><h1>All Matches</h1><p>Browse your previous battles, results, and opponents in one place.</p><span class="history-refresh">Latest refresh: @_refreshedAt.ToString("h:mm:ss tt")</span></header>
+<nav class="history-tabs" aria-label="Match status filters">
+<button type="button" class="@TabClass("all")" @onclick='() => SetStatus("all")'>All Matches <span>@AllMatches.Count</span></button>
+<button type="button" class="@TabClass("completed")" @onclick='() => SetStatus("completed")'>Completed Battles <span>@CompletedCount</span></button>
+<button type="button" class="@TabClass("aborted")" @onclick='() => SetStatus("aborted")'>Aborted Battles <span>@AbortedCount</span></button>
+</nav>
+<section class="history-tools">
+<header class="history-tools-head"><strong>Search and filter</strong><button type="button" class="history-reset" @onclick="Reset">Reset</button></header>
+<div class="history-filter-grid">
+<label>Session or player<input @bind="_search" @bind:event="oninput" placeholder="Search game ID or player" /></label>
+<label>Result<select @bind="_result"><option value="all">All results</option><option value="victory">Victory</option><option value="defeat">Defeat</option><option value="draw">Draw</option><option value="aborted">Aborted</option></select></label>
+<label>Game type<select @bind="_mode"><option value="all">All games</option><option value="SinglePlayer">Vs AI</option><option value="Multiplayer">Online</option><option value="Local">Local</option></select></label>
+<label>Players<select @bind="_players"><option value="all">Any players</option><option value="2">2 players</option><option value="3">3 players</option></select></label>
+<label>From<input type="date" @bind="_from" /></label><label>To<input type="date" @bind="_to" /></label>
+<label>Sort date<select @bind="_sort"><option value="newest">Newest first</option><option value="oldest">Oldest first</option></select></label>
+</div>
+<div class="history-summary"><strong>@FilteredMatches.Count matching session@(FilteredMatches.Count==1?"":"s")</strong><span>Every saved session, won or lost.</span></div>
+<div class="history-list">
+@if(FilteredMatches.Count==0){<div class="history-empty">No matches meet the selected filters.</div>}
+@foreach(var match in FilteredMatches){<article class="history-card">
+<div><div class="history-badges"><span class="@($"history-badge {ResultKey(match)}")">@ResultText(match)</span><span class="history-badge mode">@ModeText(match)</span><span class="history-badge">@match.BoardSize x @match.BoardSize</span><span class="history-badge players">@match.Players.Count Players</span></div>
+<div class="history-players">@foreach(var player in match.Players){<div class="history-player"><img src="@AvatarPath(player.Avatar)" alt="@player.Name avatar"/><span><strong>@player.Name</strong><small>@player.Marker</small></span></div>}</div>
+<div class="history-meta"><span>@match.StartedAt.ToLocalTime().ToString("M/d/yyyy, h:mm:ss tt")</span><span>@match.Moves.Count moves</span><span>@Duration(match)</span></div></div>
+<div class="history-card-action"><div class="history-session"><span>Session No.</span><strong>@match.Id</strong></div><a class="history-replay" href="@($"/replay/{match.Id}")">Watch replay</a></div>
+</article>}
+</div>
+</section>
+</main>
+</div>
 
-    private string Opponents(Match match) =>
-        string.Join(", ", match.Players.Where(player => player.PlayerId != Session.Player!.Id).Select(player => player.Name));
+@code{
+private string _status="all",_search="",_result="all",_mode="all",_players="all",_sort="newest";private DateTime? _from,_to;private readonly DateTimeOffset _refreshedAt=DateTimeOffset.Now;
+private IReadOnlyList<Match> AllMatches=>Session.Player is null?[]:Matches.History(Session.Player.Id);
+private int CompletedCount=>AllMatches.Count(m=>m.Status==MatchStatus.Completed);private int AbortedCount=>AllMatches.Count(m=>m.Status==MatchStatus.Abandoned);
+private IReadOnlyList<Match> FilteredMatches{get{IEnumerable<Match> query=AllMatches;if(_status=="completed")query=query.Where(m=>m.Status==MatchStatus.Completed);if(_status=="aborted")query=query.Where(m=>m.Status==MatchStatus.Abandoned);if(!string.IsNullOrWhiteSpace(_search)){var term=_search.Trim();query=query.Where(m=>m.Id.Contains(term,StringComparison.OrdinalIgnoreCase)||m.Players.Any(p=>p.Name.Contains(term,StringComparison.OrdinalIgnoreCase)));}if(_result!="all")query=query.Where(m=>ResultKey(m)==_result);if(_mode!="all")query=query.Where(m=>m.Mode.ToString()==_mode);if(int.TryParse(_players,out var count))query=query.Where(m=>m.Players.Count==count);if(_from.HasValue)query=query.Where(m=>m.StartedAt.ToLocalTime().Date>=_from.Value.Date);if(_to.HasValue)query=query.Where(m=>m.StartedAt.ToLocalTime().Date<=_to.Value.Date);query=_sort=="oldest"?query.OrderBy(m=>m.StartedAt):query.OrderByDescending(m=>m.StartedAt);return query.ToList();}}
+protected override void OnInitialized(){if(!Session.IsAuthenticated)Navigation.NavigateTo("/login");}
+private string TabClass(string tab)=>$"history-tab {(_status==tab?"active":"")}";private void SetStatus(string value)=>_status=value;
+private void Reset(){_status="all";_search="";_result="all";_mode="all";_players="all";_from=null;_to=null;_sort="newest";}
+private string ResultKey(Match match)=>match.Status==MatchStatus.Abandoned?"aborted":match.Result.IsDraw?"draw":match.Players.Any(p=>p.PlayerId==Session.Player!.Id&&p.Marker==match.Result.Winner)?"victory":"defeat";
+private string ResultText(Match match)=>ResultKey(match) switch{"victory"=>"Victory","defeat"=>"Defeat","draw"=>"Draw",_=>"Aborted"};
+private static string ModeText(Match match)=>match.Mode switch{GameMode.SinglePlayer=>"Vs AI",GameMode.Multiplayer=>"Online",_=>"Local"};
+private static string Duration(Match match){var end=match.CompletedAt??DateTimeOffset.UtcNow;var duration=end-match.StartedAt;return $"{(int)duration.TotalMinutes}m {duration.Seconds}s";}
+private static string AvatarPath(string avatar)=>string.IsNullOrWhiteSpace(avatar)?"/Mambo.png":avatar.StartsWith('/')?avatar:$"/{avatar}";
 }

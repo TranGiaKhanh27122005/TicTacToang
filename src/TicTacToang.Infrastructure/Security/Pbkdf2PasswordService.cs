@@ -17,11 +17,30 @@ public sealed class Pbkdf2PasswordService : IPasswordService
 
     public bool Verify(string password, string hash)
     {
-        var parts = hash.Split('.');
-        if (parts.Length != 3 || !int.TryParse(parts[0], out var iterations)) return false;
-        var salt = Convert.FromBase64String(parts[1]);
-        var expected = Convert.FromBase64String(parts[2]);
-        var actual = Rfc2898DeriveBytes.Pbkdf2(password, salt, iterations, HashAlgorithmName.SHA256, expected.Length);
-        return CryptographicOperations.FixedTimeEquals(expected, actual);
+        if (IsBcrypt(hash))
+        {
+            return BCrypt.Net.BCrypt.Verify(password, hash);
+        }
+
+        try
+        {
+            var parts = hash.Split('.');
+            if (parts.Length != 3 || !int.TryParse(parts[0], out var iterations)) return false;
+            var salt = Convert.FromBase64String(parts[1]);
+            var expected = Convert.FromBase64String(parts[2]);
+            var actual = Rfc2898DeriveBytes.Pbkdf2(password, salt, iterations, HashAlgorithmName.SHA256, expected.Length);
+            return CryptographicOperations.FixedTimeEquals(expected, actual);
+        }
+        catch (FormatException)
+        {
+            return false;
+        }
     }
+
+    public bool NeedsRehash(string hash) => IsBcrypt(hash);
+
+    private static bool IsBcrypt(string hash) =>
+        hash.StartsWith("$2a$", StringComparison.Ordinal) ||
+        hash.StartsWith("$2b$", StringComparison.Ordinal) ||
+        hash.StartsWith("$2y$", StringComparison.Ordinal);
 }

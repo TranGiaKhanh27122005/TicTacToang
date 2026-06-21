@@ -9,6 +9,17 @@
     <link rel="stylesheet" href="@Assets["lib/bootstrap/dist/css/bootstrap.min.css"]" />
     <link rel="stylesheet" href="@Assets["app.css"]" />
     <link rel="stylesheet" href="@Assets["TicTacToang.Web.styles.css"]" />
+    <style>
+        html[data-theme="light"] {
+            --text: #17203a;
+            --muted: #586582;
+            --border: rgba(42, 57, 98, .18);
+        }
+
+        html[data-theme="light"] body {
+            background: linear-gradient(135deg, #edf3ff 0%, #e4e9fb 52%, #dcd7fa 100%);
+        }
+    </style>
     <ImportMap />
     <link rel="icon" type="image/png" href="favicon.png" />
     <HeadOutlet />
@@ -16,6 +27,18 @@
 
 <body>
     <Routes @rendermode="InteractiveServer" />
+    <script>
+        window.ticTacTheme = {
+            get: function () {
+                return localStorage.getItem("tictactoang-theme") || "dark";
+            },
+            set: function (theme) {
+                document.documentElement.dataset.theme = theme;
+                localStorage.setItem("tictactoang-theme", theme);
+            }
+        };
+        document.documentElement.dataset.theme = window.ticTacTheme.get();
+    </script>
     <script src="_framework/blazor.web.js"></script>
 </body>
 

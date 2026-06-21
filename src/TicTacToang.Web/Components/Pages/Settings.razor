@@ -2,17 +2,48 @@
 @page "/setting-page"
 @inject UserSession Session
 @inject NavigationManager Navigation
+@inject Microsoft.JSInterop.IJSRuntime JS
 
-<a class="return-button" href="/main-menu">Back to Menu</a>
-<header class="page-title"><div><p class="eyebrow">SYSTEM</p><h1>Settings</h1></div></header>
-<section class="form-panel narrow">
-    <label class="toggle"><input type="checkbox" checked /> Notifications</label>
-    <label class="toggle"><input type="checkbox" checked /> Game sounds</label>
-    <label>Theme<select><option>Dark</option><option>Light</option></select></label>
-    <button class="danger" @onclick="Logout">Log out</button>
+<style>
+.settings-page{width:min(1320px,calc(100% - 2rem));min-height:calc(100vh - 3.6rem);margin:0 auto;padding:1.2rem 0 3rem}
+.settings-back{min-height:58px;gap:.75rem;margin-bottom:3.2rem;padding:.65rem 1.35rem .65rem .75rem;font-size:1rem}
+.settings-back::before{display:none}
+.settings-back-icon{width:36px;height:36px;display:grid;place-items:center;border-radius:999px;border:1px solid rgba(143,162,255,.24);background:rgba(63,71,133,.44)}
+.settings-back svg{width:20px;height:20px;fill:#dfe7ff}
+.settings-title{margin:0 0 2.2rem;color:#fff;background:none;font-size:4.4rem;line-height:1;text-shadow:none}
+.settings-section-title{margin-bottom:1.35rem;color:#fff;font-size:1.8rem}
+.settings-theme-row{min-height:148px;display:grid;grid-template-columns:78px minmax(0,1fr) auto;align-items:center;gap:1.35rem;padding:1.65rem 2rem;border-radius:18px;border:1px solid rgba(122,162,255,.2);background:linear-gradient(180deg,rgba(18,25,52,.88),rgba(9,14,34,.88));box-shadow:0 18px 46px rgba(0,0,0,.22),0 0 32px rgba(122,162,255,.05)}
+.settings-theme-icon{width:72px;height:72px;display:grid;place-items:center;border-radius:20px;background:linear-gradient(135deg,rgba(90,108,199,.42),rgba(89,65,169,.38))}
+.settings-theme-icon svg{width:38px;height:38px;fill:#dce4ff}
+.settings-theme-copy{min-width:0;display:grid;gap:.45rem}
+.settings-theme-copy strong{color:#fff;font-size:1.65rem}
+.settings-theme-copy span{color:#7f8cad;font-size:1rem}
+.settings-switch{width:76px;height:40px;min-height:40px;display:block;padding:4px;border:0;border-radius:999px;background:#424b78;box-shadow:none;overflow:visible}
+.settings-switch:hover{transform:none;background:#505b8f;box-shadow:none}
+.settings-switch span{width:32px;height:32px;display:block;border-radius:999px;background:#fff;transform:translateX(0);transition:transform .18s ease;box-shadow:0 3px 10px rgba(0,0,0,.28)}
+.settings-switch.active{background:linear-gradient(90deg,#7187ff,#8d5eff)}
+.settings-switch.active span{transform:translateX(36px)}
+.settings-logout-wrap{display:flex;justify-content:center;margin-top:1.8rem}
+.settings-logout{min-width:124px;border:0;border-radius:16px;background:linear-gradient(90deg,#ff9862,#f05d77);color:#fff;box-shadow:0 12px 28px rgba(240,93,119,.18)}
+@@media(max-width:700px){.settings-page{width:min(100% - 1rem,1320px);padding-top:.5rem}.settings-title{margin-bottom:1.8rem;font-size:3rem}.settings-back{margin-bottom:2rem}.settings-theme-row{grid-template-columns:60px minmax(0,1fr) auto;gap:.9rem;padding:1.2rem}.settings-theme-icon{width:58px;height:58px}.settings-theme-icon svg{width:31px;height:31px}.settings-theme-copy strong{font-size:1.25rem}.settings-theme-copy span{font-size:.85rem}.settings-switch{width:64px;height:36px;min-height:36px}.settings-switch span{width:28px;height:28px}.settings-switch.active span{transform:translateX(28px)}}
+</style>
+
+<div class="settings-page">
+<a class="return-button settings-back" href="/main-menu"><span class="settings-back-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M20 11H7.8l5.6-5.6L12 4l-8 8 8 8 1.4-1.4L7.8 13H20v-2z"/></svg></span>Back to Menu</a>
+<h1 class="settings-title">Settings</h1>
+<h2 class="settings-section-title">Themes</h2>
+<section class="settings-theme-row" aria-label="Theme settings">
+<span class="settings-theme-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M3 4h18a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2h-7v2h3v2H7v-2h3v-2H3a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2zm0 2v10h18V6H3z"/></svg></span>
+<span class="settings-theme-copy"><strong>Dark Mode</strong><span>Toggle dark/light theme</span></span>
+<button type="button" class="@($"settings-switch {(_darkMode ? "active" : "")}")" role="switch" aria-checked="@_darkMode.ToString().ToLowerInvariant()" aria-label="Dark mode" @onclick="ToggleThemeAsync"><span></span></button>
 </section>
+<div class="settings-logout-wrap"><button type="button" class="settings-logout" @onclick="Logout">Log Out</button></div>
+</div>
 
 @code {
-    protected override void OnInitialized() { if (!Session.IsAuthenticated) Navigation.NavigateTo("/login"); }
-    private void Logout() { Session.SignOut(); Navigation.NavigateTo("/login"); }
+private bool _darkMode=true;
+protected override void OnInitialized(){if(!Session.IsAuthenticated)Navigation.NavigateTo("/login");}
+protected override async Task OnAfterRenderAsync(bool firstRender){if(!firstRender)return;var theme=await JS.InvokeAsync<string>("ticTacTheme.get");_darkMode=!string.Equals(theme,"light",StringComparison.OrdinalIgnoreCase);StateHasChanged();}
+private async Task ToggleThemeAsync(){_darkMode=!_darkMode;await JS.InvokeVoidAsync("ticTacTheme.set",_darkMode?"dark":"light");}
+private void Logout(){Session.SignOut();Navigation.NavigateTo("/login");}
 }
