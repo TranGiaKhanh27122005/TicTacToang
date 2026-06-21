@@ -16,6 +16,9 @@ public sealed record CreateRoomRequest(
 public sealed record CreateMatchRequest(GameMode Mode, int BoardSize, int TimeControlSeconds, Guid PlayerId, AiDifficulty Difficulty = AiDifficulty.Medium);
 public sealed record PlayMoveRequest(Guid? PlayerId, int Row, int Column, int TimeTakenSeconds = 0);
 public sealed record AuthResult(PlayerView Player, string Token);
+public sealed record FriendSummary(Guid Id, string Name, string Username, string Avatar, bool IsOnline);
+public sealed record SocialAlertSummary(Guid Id, string SenderName, string RoomName, Guid RoomId, DateTimeOffset CreatedAt);
+public sealed record FriendRequestSummary(Guid Id, string SenderName, string Username, string Avatar, DateTimeOffset CreatedAt);
 
 public sealed record AdminUserQuery(string? Search, string? Role, string? Status, string? Premium);
 

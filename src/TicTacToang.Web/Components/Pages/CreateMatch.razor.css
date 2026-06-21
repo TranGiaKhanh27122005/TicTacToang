@@ -114,8 +114,13 @@
     accent-color: #7a8fff;
 }
 
+.create-room-actions {
+    width: 100%;
+    display: flex;
+    justify-content: center;
+}
+
 .create-room-submit {
-    justify-self: center;
     width: min(360px, 100%);
     min-height: 56px;
     margin-top: .45rem;

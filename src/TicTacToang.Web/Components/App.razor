@@ -37,6 +37,17 @@
                 localStorage.setItem("tictactoang-theme", theme);
             }
         };
+        window.ticTacAuth = {
+            get: function () {
+                return localStorage.getItem("tictactoang-auth");
+            },
+            set: function (authJson) {
+                localStorage.setItem("tictactoang-auth", authJson);
+            },
+            clear: function () {
+                localStorage.removeItem("tictactoang-auth");
+            }
+        };
         document.documentElement.dataset.theme = window.ticTacTheme.get();
     </script>
     <script src="_framework/blazor.web.js"></script>

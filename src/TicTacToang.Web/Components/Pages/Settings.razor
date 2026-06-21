@@ -37,7 +37,7 @@
 <span class="settings-theme-copy"><strong>Dark Mode</strong><span>Toggle dark/light theme</span></span>
 <button type="button" class="@($"settings-switch {(_darkMode ? "active" : "")}")" role="switch" aria-checked="@_darkMode.ToString().ToLowerInvariant()" aria-label="Dark mode" @onclick="ToggleThemeAsync"><span></span></button>
 </section>
-<div class="settings-logout-wrap"><button type="button" class="settings-logout" @onclick="Logout">Log Out</button></div>
+<div class="settings-logout-wrap"><button type="button" class="settings-logout" @onclick="LogoutAsync">Log Out</button></div>
 </div>
 
 @code {
@@ -45,5 +45,5 @@ private bool _darkMode=true;
 protected override void OnInitialized(){if(!Session.IsAuthenticated)Navigation.NavigateTo("/login");}
 protected override async Task OnAfterRenderAsync(bool firstRender){if(!firstRender)return;var theme=await JS.InvokeAsync<string>("ticTacTheme.get");_darkMode=!string.Equals(theme,"light",StringComparison.OrdinalIgnoreCase);StateHasChanged();}
 private async Task ToggleThemeAsync(){_darkMode=!_darkMode;await JS.InvokeVoidAsync("ticTacTheme.set",_darkMode?"dark":"light");}
-private void Logout(){Session.SignOut();Navigation.NavigateTo("/login");}
+private async Task LogoutAsync(){Session.SignOut();await JS.InvokeVoidAsync("ticTacAuth.clear");Navigation.NavigateTo("/login");}
 }

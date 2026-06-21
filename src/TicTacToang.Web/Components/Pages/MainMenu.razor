@@ -101,6 +101,17 @@
     .recent-match-archive a { display: flex; align-items: center; justify-content: space-between; gap: 1rem; padding: .8rem .2rem; border-bottom: 1px solid rgba(255, 255, 255, .08); color: #96a3c8; font-size: .86rem; }
     .recent-match-archive strong { color: #dce3fb; }
 
+    .social-entry-list { display: grid; gap: .8rem; }
+    .social-entry { min-width: 0; display: grid; grid-template-columns: 52px minmax(0, 1fr) auto; align-items: center; gap: .85rem; padding: .9rem; border: 1px solid rgba(255, 255, 255, .12); border-radius: 18px; background: rgba(8, 15, 35, .46); }
+    .social-entry img, .social-entry-icon { width: 52px; height: 52px; display: grid; place-items: center; object-fit: cover; border-radius: 999px; border: 1px solid rgba(143, 177, 255, .42); background: rgba(67, 82, 151, .34); color: #9cdfff; font-weight: 900; }
+    .social-entry-copy { min-width: 0; display: grid; gap: .25rem; }
+    .social-entry-copy strong { overflow: hidden; color: #fff; text-overflow: ellipsis; white-space: nowrap; }
+    .social-entry-copy small { color: #8997bc; }
+    .social-entry-copy .online { color: #67e8b7; }
+    .social-entry-action { min-height: 38px; padding: .45rem .75rem; border-radius: 12px; font-size: .78rem; }
+    .social-entry-action.primary { background: linear-gradient(90deg, #607eff, #8f5dff); color: #fff; }
+    .social-feedback { margin: .8rem 0 0; color: #67e8b7; font-size: .85rem; }
+
     @@media (max-width: 900px) {
         .main-menu-tabs { grid-template-columns: repeat(2, minmax(0, 1fr)); }
         .recent-match-header { grid-template-columns: minmax(0, 1fr) 48px; }
@@ -209,8 +220,23 @@
                 <section class="main-menu-social-panel">
                     @if (_activeTab == "friends")
                     {
-                        <header><h2>Friends</h2><span>0 of @FriendCount online</span></header>
-                        <div class="main-menu-empty-card">No friends yet. Send a request from Other Players.</div>
+                        <header><h2>Friends</h2><span>@OnlineFriendCount of @FriendCount online</span></header>
+                        @if (FriendList.Count == 0)
+                        {
+                            <div class="main-menu-empty-card">No friends yet. Send a request from Other Players.</div>
+                        }
+                        else
+                        {
+                            <div class="social-entry-list">
+                                @foreach (var friend in FriendList)
+                                {
+                                    <article class="social-entry">
+                                        <img src="@AvatarPath(friend.Avatar)" alt="@friend.Name avatar" />
+                                        <span class="social-entry-copy"><strong>@friend.Name</strong><small>@($"@{friend.Username}")</small><small class="@(friend.IsOnline ? "online" : "")">@(friend.IsOnline ? "Online now" : "Offline")</small></span>
+                                    </article>
+                                }
+                            </div>
+                        }
                     }
                     else if (_activeTab == "recent")
                     {
@@ -269,13 +295,38 @@
                     }
                     else if (_activeTab == "alerts")
                     {
-                        <header><h2>Alerts</h2><span>@Social.Invites(Session.Player.Id).Count pending</span></header>
-                        <div class="main-menu-empty-card">No room invites right now.</div>
+                        <header><h2>Alerts</h2><span>@AlertList.Count pending</span></header>
+                        @if (AlertList.Count == 0)
+                        {
+                            <div class="main-menu-empty-card">No room invites right now.</div>
+                        }
+                        else
+                        {
+                            <div class="social-entry-list">
+                                @foreach (var alert in AlertList)
+                                {
+                                    <article class="social-entry"><span class="social-entry-icon">!</span><span class="social-entry-copy"><strong>@alert.SenderName invited you</strong><small>@alert.RoomName</small><small>@FormatDate(alert.CreatedAt)</small></span><a class="social-entry-action" href="/join-match">View</a></article>
+                                }
+                            </div>
+                        }
                     }
                     else
                     {
-                        <header><h2>Requests</h2><span>@Social.Requests(Session.Player.Id).Count total</span></header>
-                        <div class="main-menu-empty-card">No pending friend requests.</div>
+                        <header><h2>Requests</h2><span>@RequestList.Count pending</span></header>
+                        @if (RequestList.Count == 0)
+                        {
+                            <div class="main-menu-empty-card">No pending friend requests.</div>
+                        }
+                        else
+                        {
+                            <div class="social-entry-list">
+                                @foreach (var request in RequestList)
+                                {
+                                    <article class="social-entry"><img src="@AvatarPath(request.Avatar)" alt="@request.SenderName avatar" /><span class="social-entry-copy"><strong>@request.SenderName</strong><small>@($"@{request.Username}")</small><small>Sent @FormatDate(request.CreatedAt)</small></span><button type="button" class="social-entry-action primary" @onclick="() => AcceptRequestAsync(request.Id)">Accept</button></article>
+                                }
+                            </div>
+                        }
+                        @if (_socialFeedback is not null) { <p class="social-feedback">@_socialFeedback</p> }
                     }
                 </section>
             </aside>
@@ -285,15 +336,20 @@
 
 @code {
     private string _activeTab = "recent";
-    private int FriendCount => Social.Friends(Session.Player!.Id).Count;
+    private string? _socialFeedback;
+    private IReadOnlyList<FriendSummary> FriendList => Social.FriendSummaries(Session.Player!.Id);
+    private IReadOnlyList<SocialAlertSummary> AlertList => Social.AlertSummaries(Session.Player!.Id);
+    private IReadOnlyList<FriendRequestSummary> RequestList => Social.PendingRequestSummaries(Session.Player!.Id);
+    private int FriendCount => FriendList.Count;
+    private int OnlineFriendCount => FriendList.Count(friend => friend.IsOnline);
     private Match? RecentMatch => Matches.History(Session.Player!.Id).FirstOrDefault();
 
     private IReadOnlyList<MenuTab> _tabs => new[]
     {
-        new MenuTab("friends", "Friends", 0),
+        new MenuTab("friends", "Friends", FriendCount),
         new MenuTab("recent", "Recent", Matches.History(Session.Player!.Id).Count),
-        new MenuTab("alerts", "Alerts", Social.Invites(Session.Player!.Id).Count),
-        new MenuTab("requests", "Requests", Social.Requests(Session.Player!.Id).Count),
+        new MenuTab("alerts", "Alerts", AlertList.Count),
+        new MenuTab("requests", "Requests", RequestList.Count),
     };
 
     protected override void OnInitialized()
@@ -308,6 +364,11 @@
         match.Players.Any(player => player.PlayerId == Session.Player!.Id && player.Marker == match.Result.Winner) ? "Victory" : "Defeat";
 
     private string OutcomeClass(Match match) => Outcome(match).ToLowerInvariant();
+    private async Task AcceptRequestAsync(Guid requestId)
+    {
+        await Social.AcceptRequestAsync(requestId, Session.Player!.Id);
+        _socialFeedback = "Friend request accepted.";
+    }
     private static string FormatDate(DateTimeOffset date) => date.ToLocalTime().ToString("M/d/yyyy, h:mm:ss tt");
     private static string AvatarPath(string avatar) =>
         string.IsNullOrWhiteSpace(avatar) ? "/Mambo.png" : avatar.StartsWith('/') ? avatar : $"/{avatar}";
