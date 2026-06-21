@@ -9,9 +9,9 @@
         <h1>Sign in</h1>
         <p class="muted">Enter the arena and continue your matches.</p>
         <label>Username or email</label>
-        <input @bind="_identity" autocomplete="username" />
+        <input @bind="_identity" autocomplete="off" />
         <label>Password</label>
-        <input @bind="_password" type="password" autocomplete="current-password" />
+        <input @bind="_password" type="password" autocomplete="new-password" />
         @if (_error is not null) { <p class="alert-error">@_error</p> }
         <button class="primary" @onclick="LoginAsync">Sign in</button>
         <p class="auth-foot">New player? <a href="/register">Create account</a></p>
@@ -19,8 +19,8 @@
 </div>
 
 @code {
-    private string _identity = "playera";
-    private string _password = "PlayerA@123";
+    private string _identity = "";
+    private string _password = "";
     private string? _error;
 
     private async Task LoginAsync()

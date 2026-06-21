@@ -4,6 +4,115 @@
 @inject SocialService Social
 @inject NavigationManager Navigation
 
+<style>
+    .main-menu-tabs {
+        min-height: 120px;
+        gap: .75rem;
+        padding: 1.45rem;
+    }
+
+    .main-menu-tab {
+        position: relative;
+        min-width: 0;
+        min-height: 72px;
+        border-radius: 14px;
+        border-color: rgba(178, 188, 255, .16);
+        font-size: 1.05rem;
+    }
+
+    .main-menu-social-panel:has(.recent-match-detail) { min-height: 620px; }
+
+    .recent-match-header {
+        display: grid !important;
+        grid-template-columns: minmax(0, 1fr) auto 48px;
+        align-items: center !important;
+        gap: 1rem !important;
+        margin-bottom: 1.5rem !important;
+    }
+
+    .recent-match-header h2 { font-size: 1.9rem; white-space: nowrap; }
+    .recent-match-header time { color: #95a2c7; font-size: .93rem; font-weight: 600; white-space: nowrap; }
+
+    .recent-match-open {
+        width: 48px;
+        height: 48px;
+        display: grid;
+        place-items: center;
+        border-radius: 999px;
+        border: 1px solid rgba(255, 255, 255, .78);
+        background: rgba(26, 32, 65, .72);
+    }
+
+    .recent-match-open svg { width: 23px; height: 23px; fill: #4778ff; }
+
+    .recent-match-detail {
+        min-height: 480px;
+        display: grid;
+        grid-template-rows: auto 1fr;
+        gap: 2.5rem;
+        padding: 2.2rem 2rem;
+        border-radius: 34px;
+        border: 2px solid rgba(255, 255, 255, .78);
+        background: rgba(7, 12, 31, .72);
+    }
+
+    .recent-match-players {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        align-content: start;
+        gap: 1.1rem;
+    }
+
+    .recent-player {
+        min-width: 0;
+        min-height: 112px;
+        display: grid;
+        grid-template-columns: 64px minmax(0, 1fr);
+        align-items: center;
+        gap: .9rem;
+        padding: 1.1rem;
+        border-radius: 28px;
+        border: 1px solid rgba(255, 255, 255, .78);
+        background: rgba(20, 25, 54, .78);
+    }
+
+    .recent-player img {
+        width: 64px;
+        height: 64px;
+        display: block;
+        object-fit: cover;
+        border-radius: 999px;
+        border: 2px solid rgba(255, 255, 255, .82);
+        background: #fff;
+    }
+
+    .recent-player > span { min-width: 0; display: grid; gap: .45rem; }
+    .recent-player strong { overflow: hidden; color: #fff; font-size: 1.15rem; line-height: 1.1; text-overflow: ellipsis; white-space: nowrap; }
+    .recent-player small { color: #8190b9; font-size: .9rem; font-weight: 900; }
+
+    .recent-match-result { align-self: end; display: grid; gap: 1.2rem; padding: 0 .15rem 1rem; }
+    .recent-match-result > span { color: #7785ab; font-size: .85rem; font-weight: 700; letter-spacing: .18em; text-transform: uppercase; }
+    .recent-match-result strong { font-size: 1.75rem; }
+    .recent-match-result .victory { color: #67e8b7; }
+    .recent-match-result .defeat { color: #ff5c82; }
+    .recent-match-result .draw { color: #f6c94d; }
+
+    .recent-match-archive { display: grid; margin-top: 1.1rem; }
+    .recent-match-archive a { display: flex; align-items: center; justify-content: space-between; gap: 1rem; padding: .8rem .2rem; border-bottom: 1px solid rgba(255, 255, 255, .08); color: #96a3c8; font-size: .86rem; }
+    .recent-match-archive strong { color: #dce3fb; }
+
+    @@media (max-width: 900px) {
+        .main-menu-tabs { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+        .recent-match-header { grid-template-columns: minmax(0, 1fr) 48px; }
+        .recent-match-header time { grid-column: 1 / -1; grid-row: 2; }
+    }
+
+    @@media (max-width: 560px) {
+        .main-menu-tabs, .recent-match-players { grid-template-columns: 1fr; }
+        .recent-match-detail { min-height: 0; padding: 1.35rem; }
+    }
+</style>
+
 @if (Session.Player is not null)
 {
     <div class="main-menu-page">
@@ -65,7 +174,7 @@
                         <span><strong>Create Room</strong><small>Custom game vs AI or Friend</small></span>
                     </a>
 
-                    <a class="main-menu-action" href="/rooms?mode=join">
+                    <a class="main-menu-action" href="/join-match">
                         <span class="main-menu-action-icon">
                             <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 11a4 4 0 1 1 0-8 4 4 0 0 1 0 8zm6.5 8H2.5v-1.5C2.5 14.5 6 13 9 13s6.5 1.5 6.5 4.5V19zm.4-7.4A3.5 3.5 0 0 0 14.5 5c-.4 0-.8.1-1.1.2a5.8 5.8 0 0 1 0 5.6c.4.2.8.3 1.2.3.5 0 .9-.1 1.3-.3zm1.2 1.7c2.1.5 4.4 1.9 4.4 4.2V19h-3.8v-1.5c0-1.6-.6-3-1.6-4.2z" /></svg>
                         </span>
@@ -105,19 +214,57 @@
                     }
                     else if (_activeTab == "recent")
                     {
-                        <header><h2>Recent</h2><span>@Matches.History(Session.Player.Id).Count matches</span></header>
-                        @if (Matches.History(Session.Player.Id).Any())
+                        @if (RecentMatch is not null)
                         {
-                            <div class="main-menu-list">
-                                @foreach (var match in Matches.History(Session.Player.Id).Take(3))
-                                {
-                                    <a href="@($"/replay/{match.Id}")"><span>@match.Mode</span><strong>@Outcome(match)</strong></a>
-                                }
+                            <header class="recent-match-header">
+                                <h2>Recent Match</h2>
+                                <time datetime="@RecentMatch.StartedAt.ToString("O")">@FormatDate(RecentMatch.StartedAt)</time>
+                                <a class="recent-match-open" href="@($"/replay/{RecentMatch.Id}")" aria-label="Open recent match replay">
+                                    <svg viewBox="0 0 24 24" aria-hidden="true">
+                                        <path d="M14 4h6v6h-2V7.4l-7.3 7.3-1.4-1.4L16.6 6H14V4zM5 8h5v2H7v7h7v-3h2v5H5V8z" />
+                                    </svg>
+                                </a>
+                            </header>
+
+                            <div class="recent-match-detail">
+                                <div class="recent-match-players">
+                                    @foreach (var player in RecentMatch.Players)
+                                    {
+                                        <article class="recent-player" @key="player.Marker">
+                                            <img src="@AvatarPath(player.Avatar)" alt="@player.Name avatar" />
+                                            <span>
+                                                <strong>@player.Name</strong>
+                                                <small>@player.Marker</small>
+                                            </span>
+                                        </article>
+                                    }
+                                </div>
+
+                                <div class="recent-match-result">
+                                    <span>Result</span>
+                                    <strong class="@OutcomeClass(RecentMatch)">@Outcome(RecentMatch)</strong>
+                                </div>
                             </div>
                         }
                         else
                         {
+                            <header class="recent-match-header">
+                                <h2>Recent Match</h2>
+                            </header>
                             <div class="main-menu-empty-card">No recent matches yet.</div>
+                        }
+
+                        @if (Matches.History(Session.Player.Id).Skip(1).Any())
+                        {
+                            <div class="recent-match-archive" aria-label="Older matches">
+                                @foreach (var match in Matches.History(Session.Player.Id).Skip(1).Take(2))
+                                {
+                                    <a href="@($"/replay/{match.Id}")">
+                                        <span>@FormatDate(match.StartedAt)</span>
+                                        <strong>@Outcome(match)</strong>
+                                    </a>
+                                }
+                            </div>
                         }
                     }
                     else if (_activeTab == "alerts")
@@ -137,8 +284,9 @@
 }
 
 @code {
-    private string _activeTab = "friends";
+    private string _activeTab = "recent";
     private int FriendCount => Social.Friends(Session.Player!.Id).Count;
+    private Match? RecentMatch => Matches.History(Session.Player!.Id).FirstOrDefault();
 
     private IReadOnlyList<MenuTab> _tabs => new[]
     {
@@ -157,7 +305,12 @@
     }
 
     private string Outcome(Match match) => match.Result.IsDraw ? "Draw" :
-        match.Players.Any(player => player.PlayerId == Session.Player!.Id && player.Marker == match.Result.Winner) ? "Win" : "Loss";
+        match.Players.Any(player => player.PlayerId == Session.Player!.Id && player.Marker == match.Result.Winner) ? "Victory" : "Defeat";
+
+    private string OutcomeClass(Match match) => Outcome(match).ToLowerInvariant();
+    private static string FormatDate(DateTimeOffset date) => date.ToLocalTime().ToString("M/d/yyyy, h:mm:ss tt");
+    private static string AvatarPath(string avatar) =>
+        string.IsNullOrWhiteSpace(avatar) ? "/Mambo.png" : avatar.StartsWith('/') ? avatar : $"/{avatar}";
 
     private sealed record MenuTab(string Id, string Label, int Count);
 }

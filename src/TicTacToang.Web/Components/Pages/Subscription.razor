@@ -3,25 +3,36 @@
 @inject PlayerService Players
 @inject NavigationManager Navigation
 
-<a class="return-button" href="/main-menu">Back to Menu</a>
-<header class="page-title"><div><p class="eyebrow">MEMBERSHIP</p><h1>Premium</h1></div></header>
-@if (Session.Player is not null)
-{
-    <section class="subscription-panel">
-        <div>
-            <h2>Match Replay Access</h2>
-            <p class="muted">Review completed games move-by-move and study winning lines.</p>
-            <ul><li>Unlimited replay history</li><li>Move-by-move board playback</li><li>Premium profile indicator</li></ul>
-        </div>
-        <div class="price">
-            <strong>$4.99</strong><span>monthly</span>
-            @if (Session.Player.IsPremium) { <p class="alert-success">Premium active until @Session.Player.SubscriptionEndDate?.ToString("dd MMM yyyy")</p> }
-            else { <button class="primary" @onclick="SubscribeAsync">Activate sandbox subscription</button> }
-        </div>
-    </section>
-}
+<style>
+.premium-page{width:min(1440px,calc(100% - 1rem));margin:0 auto;padding:.2rem 0 3rem}.premium-back{margin-bottom:0}.premium-shell{padding:2.5rem;border:1px solid rgba(122,162,255,.18);border-radius:26px;background:linear-gradient(180deg,rgba(22,30,63,.9),rgba(8,13,32,.92));box-shadow:0 22px 58px rgba(0,0,0,.28)}
+.premium-label{display:inline-flex;align-items:center;gap:.5rem;padding:.5rem 1rem;border-radius:999px;background:#ffc000;color:#171717;font-weight:850}.premium-shell>h1{margin:3rem 0 .9rem;color:#fff;background:none;font-size:4rem;text-shadow:none}.premium-intro{max-width:850px;margin:0;color:#9faacc;font-size:1.05rem;line-height:1.55}
+.premium-grid{display:grid;grid-template-columns:minmax(0,1.1fr) minmax(360px,.9fr);gap:2rem;margin-top:3rem}.premium-panel{padding:1.8rem;border:1px solid rgba(255,255,255,.62);border-radius:28px;background:rgba(8,13,32,.5)}.premium-plan-head{display:flex;align-items:center;justify-content:space-between;gap:1rem}.premium-plan-head h2{margin:0;color:#fff;font-size:1.8rem}.premium-price{padding:.55rem 1rem;border-radius:999px;background:#ffc000;color:#161616;font-size:1.4rem;font-weight:900}.premium-muted{margin:1rem 0;color:#929fc1}
+.premium-benefits{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:1rem 2rem;margin:1.5rem 0;padding:0;list-style:none}.premium-benefits li{color:#aeb9d6}.premium-benefits li::before{content:"✓";display:inline-grid;place-items:center;width:20px;height:20px;margin-right:.65rem;border:1px solid #39d6a1;border-radius:999px;color:#39d6a1;font-size:.75rem;font-weight:900}
+.premium-wallet{margin-top:2rem;padding:1.6rem;border:1px solid rgba(255,255,255,.55);border-radius:24px;background:rgba(37,43,73,.58)}.premium-wallet h3{margin:0 0 .5rem;color:#fff;font-size:1rem}.premium-wallet p{margin:0;color:#8794b5;font-size:.85rem}.premium-notice{margin-top:1.5rem;padding:1rem;border:1px solid rgba(145,229,255,.55);border-radius:999px;background:rgba(29,73,101,.35);color:#c0ebf8;text-align:center;font-size:.85rem}.premium-pay{width:100%;min-height:62px;margin-top:0;border:0;border-radius:999px;background:#ffc000;color:#171717;font-size:1rem;box-shadow:0 12px 26px rgba(255,192,0,.15)}.premium-pay:hover{background:#ffd034;color:#171717}.premium-pay:disabled{opacity:.65}.premium-message{margin:1rem 0 0}
+.premium-record h2{margin:0 0 2rem;color:#fff;font-size:1.8rem}.premium-record-list{display:grid;gap:0}.premium-record-row{display:flex;align-items:center;justify-content:space-between;gap:1rem;padding:1.2rem 0;border-bottom:1px solid rgba(255,255,255,.04);color:#929fc1}.premium-record-row strong{color:#fff}.premium-record-row .active{color:#67e8b7}.premium-record-row .pending{color:#f6c94d}.premium-record-note{margin-top:2rem;padding:1.2rem;border:1px solid rgba(122,162,255,.18);border-radius:18px;color:#8f9bbb;line-height:1.55}
+@@media(max-width:950px){.premium-grid{grid-template-columns:1fr}.premium-shell{padding:1.5rem}.premium-shell>h1{font-size:3rem}.premium-benefits{grid-template-columns:1fr}}
+@@media(max-width:560px){.premium-page{width:calc(100% - .5rem)}.premium-shell{padding:1.1rem}.premium-plan-head{align-items:flex-start}.premium-panel{padding:1.2rem}.premium-notice{border-radius:18px}.premium-record-row{align-items:flex-start;flex-direction:column}}
+</style>
 
-@code {
-    protected override void OnInitialized() { if (!Session.IsAuthenticated) Navigation.NavigateTo("/login"); }
-    private async Task SubscribeAsync() => Session.Refresh(await Players.ActivateSubscriptionAsync(Session.Player!.Id));
+<div class="premium-page">
+<a class="return-button premium-back" href="/main-menu">Back to Menu</a>
+@if(Session.Player is not null){<main class="premium-shell">
+<span class="premium-label">Premium feature</span><h1>Monthly subscription</h1><p class="premium-intro">Activate one month of Premium in the capstone sandbox. This demonstration records Premium status on your profile without charging real money.</p>
+<div class="premium-grid">
+<section class="premium-panel"><div class="premium-plan-head"><h2>Premium Monthly</h2><span class="premium-price">$10</span></div><p class="premium-muted">Demo monthly plan for testing the complete subscription workflow.</p>
+<ul class="premium-benefits"><li>Premium profile badge</li><li>Special UI themes</li><li>Advanced match insights</li><li>Priority support</li><li>Unlimited match replays</li><li>Move-by-move playback</li></ul>
+<div class="premium-wallet"><h3>PayPal Sandbox</h3><p>No real payment is sent. The demo action below simulates a successful sandbox approval.</p><div class="premium-notice">After approval, the application activates Premium for one month and saves it to the database.</div></div>
+<button type="button" class="premium-pay" disabled="@(_processing||Session.Player.IsPremium)" @onclick="SubscribeAsync">@(Session.Player.IsPremium?"Premium already active":_processing?"Processing sandbox checkout...":"Approve $10 demo PayPal payment")</button>
+@if(_message is not null){<p class="@(_failed?"alert-error premium-message":"alert-success premium-message")">@_message</p>}
+</section>
+<section class="premium-panel premium-record"><h2>Checkout record</h2><div class="premium-record-list">
+<div class="premium-record-row"><span>Billing cycle</span><strong>Monthly</strong></div><div class="premium-record-row"><span>Provider</span><strong>PayPal Sandbox Demo</strong></div><div class="premium-record-row"><span>Payment method</span><strong>Simulated wallet</strong></div><div class="premium-record-row"><span>Premium status</span><strong class="@(Session.Player.IsPremium?"active":"pending")">@(Session.Player.IsPremium?"Active":"Pending activation")</strong></div><div class="premium-record-row"><span>Subscription end</span><strong>@(Session.Player.SubscriptionEndDate?.ToLocalTime().ToString("dd MMM yyyy")??"Not active")</strong></div>
+</div><p class="premium-record-note">This capstone currently demonstrates subscription state management. A production deployment would create and capture PayPal orders server-side and verify the payment before activation.</p></section>
+</div></main>}
+</div>
+
+@code{
+private bool _processing,_failed;private string? _message;
+protected override void OnInitialized(){if(!Session.IsAuthenticated)Navigation.NavigateTo("/login");}
+private async Task SubscribeAsync(){try{_processing=true;_failed=false;_message=null;await Task.Delay(500);Session.Refresh(await Players.ActivateSubscriptionAsync(Session.Player!.Id));_message="Demo payment approved. Premium is active for one month.";}catch(Exception ex){_failed=true;_message=ex.Message;}finally{_processing=false;}}
 }

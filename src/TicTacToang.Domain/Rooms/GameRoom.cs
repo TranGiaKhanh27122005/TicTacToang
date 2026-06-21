@@ -30,6 +30,28 @@ public sealed class GameRoom
     public List<RoomMember> Members { get; init; } = [];
     public List<ChatMessage> ChatMessages { get; init; } = [];
 
+    public static GameRoom Restore(
+        Guid id,
+        int roomCode,
+        string name,
+        Guid hostId,
+        int capacity,
+        RoomStatus status,
+        RoomSettings settings,
+        IReadOnlyList<RoomMember> members,
+        IReadOnlyList<ChatMessage> chatMessages) => new()
+    {
+        Id = id,
+        RoomCode = roomCode,
+        Name = name,
+        HostId = hostId,
+        Capacity = capacity,
+        Status = status,
+        Settings = settings,
+        Members = members.ToList(),
+        ChatMessages = chatMessages.ToList()
+    };
+
     public void AddMember(RoomMember member)
     {
         if (Status != RoomStatus.Available || Members.Count >= Capacity)

@@ -1,0 +1,14 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net9.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\TicTacToang.Domain\TicTacToang.Domain.csproj" />
+    <ProjectReference Include="..\..\src\TicTacToang.Application\TicTacToang.Application.csproj" />
+    <ProjectReference Include="..\..\src\TicTacToang.Infrastructure\TicTacToang.Infrastructure.csproj" />
+    <PackageReference Include="Npgsql.EntityFrameworkCore.PostgreSQL" Version="9.0.0" />
+  </ItemGroup>
+</Project>

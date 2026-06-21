@@ -72,6 +72,42 @@ public sealed class Match
         };
     }
 
+    public static Match Restore(
+        string id,
+        GameMode mode,
+        int boardSize,
+        int timeControlSeconds,
+        IReadOnlyList<MatchPlayer> players,
+        Marker currentTurn,
+        MatchStatus status,
+        IReadOnlyList<Move> moves,
+        MatchResult result,
+        DateTimeOffset startedAt,
+        DateTimeOffset? completedAt)
+    {
+        if (players.Count is < 2 or > 3)
+        {
+            throw new DomainException("Imported matches must contain two or three players.");
+        }
+
+        return new Match
+        {
+            Id = id,
+            BoardSize = boardSize,
+            Mode = mode,
+            TimeControlSeconds = timeControlSeconds,
+            PlayerX = players[0] with { Marker = Marker.X },
+            PlayerO = players[1] with { Marker = Marker.O },
+            PlayerA = players.Count == 3 ? players[2] with { Marker = Marker.A } : null,
+            CurrentTurn = currentTurn,
+            Status = status,
+            Moves = moves.ToList(),
+            Result = result,
+            StartedAt = startedAt,
+            CompletedAt = completedAt
+        };
+    }
+
     public void Join(MatchPlayer opponent)
     {
         if (Mode != GameMode.Multiplayer || Status != MatchStatus.Waiting)

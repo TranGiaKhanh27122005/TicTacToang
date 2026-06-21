@@ -80,6 +80,10 @@ public sealed class PlayerService(IApplicationStore store, IPasswordService pass
             throw new DomainException("Username/email or password is incorrect.");
         }
         player.RequireActive();
+        if (passwords.NeedsRehash(player.PasswordHash))
+        {
+            player.PasswordHash = passwords.Hash(input.Password);
+        }
         player.LastLoginAt = DateTimeOffset.UtcNow;
         player.LastSeenAt = DateTimeOffset.UtcNow;
         var token = Convert.ToBase64String(Guid.NewGuid().ToByteArray());

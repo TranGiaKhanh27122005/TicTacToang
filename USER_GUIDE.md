@@ -53,8 +53,8 @@ Get-NetTCPConnection -LocalPort 5098 -ErrorAction SilentlyContinue | ForEach-Obj
 | Account Type | Username | Password |
 | --- | --- | --- |
 | Admin | `admin` | `Admin@1234` |
-| Premium player | `playera` | `PlayerA@123` |
-| Normal player | `playerb` | `PlayerB@123` |
+| Premium player | `PlayerA` | `PlayerA@123` |
+| Normal player | `PlayerB` | `PlayerB@123` |
 
 Additional demo users are seeded for dashboard and management testing. They all use:
 
