@@ -477,11 +477,7 @@ public sealed class SqliteApplicationStore : IApplicationStore
             changed = true;
         }
 
-        if (Friendships.Count == 0 || FriendRequests.Count == 0 || RoomInvites.Count == 0)
-        {
-            AddDemoSocialData();
-            changed = true;
-        }
+        changed |= AddDemoSocialData();
 
         return changed;
     }
@@ -629,8 +625,10 @@ public sealed class SqliteApplicationStore : IApplicationStore
         Rooms.AddRange([openRoom, fullRoom, battleRoom]);
     }
 
-    private void AddDemoSocialData()
+    private bool AddDemoSocialData()
     {
+        var changed = false;
+        var admin = FindPlayer("admin");
         var playerA = FindPlayer("playera");
         var playerB = FindPlayer("playerb");
         var mina = FindPlayer("minat");
@@ -638,37 +636,61 @@ public sealed class SqliteApplicationStore : IApplicationStore
         var ava = FindPlayer("avac");
         var kai = FindPlayer("kaing");
 
-        AddFriendship(playerA.Id, mina.Id);
-        AddFriendship(ava.Id, kai.Id);
-        AddFriendship(noah.Id, playerB.Id);
+        changed |= AddFriendship(admin.Id, playerA.Id);
+        changed |= AddFriendship(admin.Id, playerB.Id);
+        changed |= AddFriendship(playerA.Id, playerB.Id);
+        changed |= AddFriendship(playerA.Id, mina.Id);
+        changed |= AddFriendship(ava.Id, kai.Id);
+        changed |= AddFriendship(noah.Id, playerB.Id);
 
-        if (!FriendRequests.Any())
-        {
-            FriendRequests.AddRange([
-                new FriendRequest { RequesterId = noah.Id, RecipientId = playerA.Id },
-                new FriendRequest { RequesterId = kai.Id, RecipientId = mina.Id }
-            ]);
-        }
+        changed |= AddFriendRequest(noah.Id, admin.Id);
+        changed |= AddFriendRequest(kai.Id, playerA.Id);
+        changed |= AddFriendRequest(mina.Id, playerB.Id);
 
         var room = Rooms.FirstOrDefault();
-        if (room is not null && !RoomInvites.Any())
+        if (room is not null)
         {
-            RoomInvites.AddRange([
-                new RoomInvite { SenderId = playerA.Id, RecipientId = playerB.Id, RoomId = room.Id },
-                new RoomInvite { SenderId = mina.Id, RecipientId = ava.Id, RoomId = room.Id }
-            ]);
+            changed |= AddRoomInvite(playerA.Id, admin.Id, room.Id);
+            changed |= AddRoomInvite(admin.Id, playerB.Id, room.Id);
+            changed |= AddRoomInvite(mina.Id, playerA.Id, room.Id);
+            changed |= AddRoomInvite(mina.Id, ava.Id, room.Id);
         }
+
+        return changed;
     }
 
-    private void AddFriendship(Guid first, Guid second)
+    private bool AddFriendship(Guid first, Guid second)
     {
         var pair = new[] { first, second }.OrderBy(id => id).ToArray();
         if (Friendships.Any(friendship => friendship.UserA == pair[0] && friendship.UserB == pair[1]))
         {
-            return;
+            return false;
         }
 
         Friendships.Add(new Friendship(pair[0], pair[1], DateTimeOffset.UtcNow.AddDays(-Random.Shared.Next(1, 20))));
+        return true;
+    }
+
+    private bool AddFriendRequest(Guid requesterId, Guid recipientId)
+    {
+        if (FriendRequests.Any(request => request.RequesterId == requesterId && request.RecipientId == recipientId && request.Status == RequestStatus.Pending))
+        {
+            return false;
+        }
+
+        FriendRequests.Add(new FriendRequest { RequesterId = requesterId, RecipientId = recipientId });
+        return true;
+    }
+
+    private bool AddRoomInvite(Guid senderId, Guid recipientId, Guid roomId)
+    {
+        if (RoomInvites.Any(invite => invite.SenderId == senderId && invite.RecipientId == recipientId && invite.RoomId == roomId && invite.Status == RequestStatus.Pending))
+        {
+            return false;
+        }
+
+        RoomInvites.Add(new RoomInvite { SenderId = senderId, RecipientId = recipientId, RoomId = roomId });
+        return true;
     }
 
     private Player FindPlayer(string username) => Players.First(player => player.Username.Equals(username, StringComparison.OrdinalIgnoreCase));
