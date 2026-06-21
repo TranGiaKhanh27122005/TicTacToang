@@ -2,6 +2,7 @@
 @inject PlayerService Players
 @inject UserSession Session
 @inject NavigationManager Navigation
+@inject Microsoft.JSInterop.IJSRuntime JS
 
 <div class="auth-screen">
     <section class="auth-panel">
@@ -22,12 +23,48 @@
     private string _identity = "";
     private string _password = "";
     private string? _error;
+    private bool _restoreChecked;
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (!firstRender || _restoreChecked)
+        {
+            return;
+        }
+
+        _restoreChecked = true;
+        try
+        {
+            var storedJson = await JS.InvokeAsync<string?>("ticTacAuth.get");
+            if (string.IsNullOrWhiteSpace(storedJson))
+            {
+                return;
+            }
+
+            var storedAuth = System.Text.Json.JsonSerializer.Deserialize<AuthResult>(storedJson);
+            var player = Players.ResolveToken(storedAuth?.Token);
+            if (storedAuth is null || player is null || !player.IsActive)
+            {
+                await JS.InvokeVoidAsync("ticTacAuth.clear");
+                return;
+            }
+
+            Session.SignIn(new AuthResult(player, storedAuth.Token));
+            Navigation.NavigateTo("/main-menu", replace: true);
+        }
+        catch (System.Text.Json.JsonException)
+        {
+            await JS.InvokeVoidAsync("ticTacAuth.clear");
+        }
+    }
 
     private async Task LoginAsync()
     {
         try
         {
-            Session.SignIn(await Players.LoginAsync(new LoginRequest(_identity, _password)));
+            var auth = await Players.LoginAsync(new LoginRequest(_identity, _password));
+            Session.SignIn(auth);
+            await JS.InvokeVoidAsync("ticTacAuth.set", System.Text.Json.JsonSerializer.Serialize(auth));
             Navigation.NavigateTo("/main-menu");
         }
         catch (Exception ex) { _error = ex.Message; }
